@@ -1,0 +1,10 @@
+.git
+.github
+.nuxt
+.output
+coverage
+docs
+node_modules
+test
+*.log
+.env*

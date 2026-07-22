@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.nuxt/
+.output/
+.data/
+.eslintcache
+coverage/
+dist/
+node_modules/
+*.log
