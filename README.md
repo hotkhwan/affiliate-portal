@@ -4,7 +4,7 @@ Infrastructure-only Nuxt service scaffold. Product features are intentionally ab
 
 ## Requirements
 
-- Node.js 22
+- Node.js 22.18.0 or newer within the 22.x release line
 - Corepack
 
 ## Local development
@@ -31,4 +31,3 @@ pnpm test
 ## Branch flow
 
 Create feature branches from `develop` and open pull requests back to `develop`. Promote validated changes from `develop` to `main` through review.
-

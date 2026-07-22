@@ -1,11 +1,13 @@
 # CI and deployment interface
 
-This document defines the repository side of the D3 CI/deployment boundary. It deliberately does not assume credential identifiers, registry locations, clusters, namespaces, or a particular CI controller configuration.
+This document defines the repository side of the deferred shared kdeploy D3 CI/deployment boundary. Its current infrastructure dependency is [klynx-cluster-deploy PR #131](https://github.com/hotkhwan/klynx-cluster-deploy/pull/131). That link records infrastructure provenance only; it does not couple this application's product or domain model to another system.
+
+**No deployment automation exists for this repository yet.** The branch behavior below is a contract for the future D3 implementation, not a claim that CI currently publishes or deploys this service. This repository deliberately does not assume credential identifiers, registry locations, clusters, namespaces, or a particular CI controller configuration.
 
 ## CI inputs
 
 - A clean checkout at an immutable Git commit.
-- Node.js 22 and Corepack, or a container builder capable of the checked-in `Dockerfile`.
+- Node.js 22.18.0 or newer within the 22.x release line and Corepack, or a container builder capable of the checked-in `Dockerfile`.
 - `APP_VERSION`, taken from `package.json`.
 - `GIT_COMMIT`, set to the full checked-out commit SHA.
 - Registry and deployment credentials supplied by the external CI platform. They must never be written into this repository or image layers.
@@ -35,7 +37,8 @@ docker build \
 ## Published artifact
 
 - One OCI image built from the checked-in, digest-pinned multi-stage `Dockerfile`.
-- The immutable image reference and source commit SHA recorded by CI.
+- The immutable image digest reference (`registry/repository@sha256:...`) and source commit SHA recorded by CI.
+- Mutable tags may aid discovery, but deployment and rollback must select an immutable digest rather than a tag.
 - No `.env` file or secret included in the build context, image metadata, or layers.
 
 ## Runtime contract
@@ -47,10 +50,18 @@ docker build \
 - `NUXT_PUBLIC_APP_VERSION` and `NUXT_PUBLIC_COMMIT_SHA` identify the running artifact and are safe to expose publicly.
 - Runtime secrets, when introduced by a reviewed feature, must be injected by the deployment platform and must not use the `NUXT_PUBLIC_` prefix.
 
-## Branch events
+## Trigger and evidence contract
 
-- Pull requests into `develop`: install, lint, typecheck, test, and image build without publishing.
-- `develop`: validate, publish an immutable non-production image, deploy to a non-production environment, then probe `/healthz` and `/readyz`.
-- `main`: publish and deploy only through an explicitly approved promotion after the corresponding `develop` artifact is validated.
+- Pull requests into `develop`: the exact head SHA triggers install, lint, typecheck, test, and an image build without publishing. Evidence records the SHA and every check result.
+- `develop`: after D3 exists, the exact merge SHA triggers validation and publication. Evidence records the source SHA, package version, immutable image digest, validation results, deployment target, rollout result, and `/healthz` and `/readyz` responses.
+- `main`: an explicitly approved promotion selects the same immutable digest already validated from `develop`; it must not silently rebuild or substitute an image by mutable tag. Evidence records the approval, selected digest, source SHA, target, rollout result, and probe responses.
 
-The external deployment implementation owns registry authentication, image naming, environment mapping, rollout, rollback, and retention. Those values are intentionally not encoded here.
+## Rollout and rollback selection
+
+- A rollout request identifies the environment and exact OCI digest selected from successful CI evidence.
+- The deployment controller applies that digest and records who or what triggered the rollout, its time, previous digest, selected digest, source SHA, and final probe/rollout status.
+- A rollback selects a previously recorded known-good digest. It never resolves `latest` or another mutable tag at rollback time.
+- Rollback evidence records the failed digest, restored digest, reason, actor, timestamps, controller result, and post-rollback probe responses.
+- Registry authentication, deployment credentials, environment mapping, rollout mechanics, and retention remain owned by the external deployment implementation and are intentionally absent here.
+
+Until the deferred shared kdeploy D3 dependency is implemented and connected, publishing, rollout, promotion, and rollback are unavailable—not manual steps implied by this repository.
