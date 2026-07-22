@@ -1,6 +1,6 @@
 # CI and deployment interface
 
-This document defines the repository side of the deferred shared kdeploy D3 CI/deployment boundary. Its current infrastructure dependency is [klynx-cluster-deploy PR #131](https://github.com/hotkhwan/klynx-cluster-deploy/pull/131). That link records infrastructure provenance only; it does not couple this application's product or domain model to another system.
+This document defines the repository side of the deferred shared kdeploy D3 CI/deployment boundary. D3 is a later, unimplemented kdeploy branch. Its D1 security prerequisite is the canonical restricted-access [pointitconsulting/klynx-cluster-deploy PR #131](https://github.com/pointitconsulting/klynx-cluster-deploy/pull/131); PR #131 is only that security prerequisite and does not implement D3. This citation records infrastructure provenance only and does not couple this application's product or domain model to another system.
 
 **No deployment automation exists for this repository yet.** The branch behavior below is a contract for the future D3 implementation, not a claim that CI currently publishes or deploys this service. This repository deliberately does not assume credential identifiers, registry locations, clusters, namespaces, or a particular CI controller configuration.
 
