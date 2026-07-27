@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:22.22.0-alpine3.23@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34 AS dependencies
+FROM node:22.22.1-alpine3.23@sha256:8094c002d08262dba12645a3b4a15cd6cd627d30bc782f53229a2ec13ee22a00 AS dependencies
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -13,7 +13,7 @@ ENV NUXT_PUBLIC_APP_VERSION=${APP_VERSION} \
 COPY . .
 RUN pnpm build
 
-FROM node:22.22.0-alpine3.23@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34 AS runtime
+FROM node:22.22.1-alpine3.23@sha256:8094c002d08262dba12645a3b4a15cd6cd627d30bc782f53229a2ec13ee22a00 AS runtime
 WORKDIR /app
 ENV HOST=0.0.0.0 \
     PORT=3000 \
