@@ -18,6 +18,18 @@ WORKDIR /app
 ENV HOST=0.0.0.0 \
     PORT=3000 \
     NODE_ENV=production
+# The runtime only needs the Node executable. Remove npm/corepack tooling and
+# their package tree so build-time supply-chain dependencies cannot ship.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx \
+    /usr/local/bin/corepack \
+    /usr/local/bin/pnpm \
+    /usr/local/bin/pnpx
+# Refresh the pinned Alpine base packages at image build time so the runtime
+# does not ship a stale security database from the Node image publication.
+RUN apk upgrade --no-cache
 COPY --from=build --chown=node:node /app/.output/ ./
 USER node
 EXPOSE 3000
