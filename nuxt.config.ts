@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     public: {
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || '0.0.0-dev',
       commitSha: process.env.NUXT_PUBLIC_COMMIT_SHA || 'local',
+      missionApiBase: process.env.NUXT_PUBLIC_MISSION_API_BASE || '/v1',
     },
   },
   typescript: {
