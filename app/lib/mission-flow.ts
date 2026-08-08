@@ -8,6 +8,8 @@ const stateOrder: MissionState[] = [
   'draftReady',
   'exported',
   'posted',
+  'resultRecorded',
+  'nextMissionReady',
 ]
 
 export interface ProgressItem {
@@ -39,7 +41,7 @@ export function missionProgress(mission?: Mission | null): ProgressItem[] {
     },
     {
       label: 'โพสต์ชิ้นแรก',
-      complete: currentIndex === stateOrder.indexOf('posted'),
+      complete: currentIndex >= stateOrder.indexOf('posted'),
       current: currentIndex === stateOrder.indexOf('exported'),
     },
   ]
@@ -59,6 +61,27 @@ export function parseFacts(value: string): string[] {
 export function validateProduct(product: ProductFacts): string | null {
   if (!product.name.trim()) return 'ใส่ชื่อสินค้าที่อยากลองก่อนนะ'
   if (!product.description.trim()) return 'เล่าสั้น ๆ ว่าสินค้านี้ใช้ทำอะไร'
+  if (product.name.trim().length > 120) return 'ชื่อสินค้าต้องไม่เกิน 120 ตัวอักษร'
+  if (product.description.trim().length > 800) return 'รายละเอียดสินค้าต้องไม่เกิน 800 ตัวอักษร'
+  if ((product.facts ?? []).length > 20) return 'ใส่ข้อเท็จจริงได้ไม่เกิน 20 ข้อ'
+  return null
+}
+
+export const acceptedMediaTypes = ['image/jpeg', 'image/png', 'video/mp4'] as const
+
+export function validateMedia(file: Pick<File, 'size' | 'type'>): string | null {
+  if (!acceptedMediaTypes.includes(file.type as typeof acceptedMediaTypes[number])) {
+    return 'รองรับเฉพาะภาพ JPG, PNG หรือวิดีโอ MP4'
+  }
+  if (file.size <= 0) return 'ไฟล์นี้ว่างเปล่า กรุณาเลือกไฟล์ใหม่'
+  if (file.size > 8 * 1024 * 1024) return 'ไฟล์ใหญ่เกิน 8 MB กรุณาเลือกภาพหรือคลิปที่สั้นลง'
+  return null
+}
+
+export function validateProductReferenceMedia(file: Pick<File, 'size' | 'type'>): string | null {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return 'ภาพสินค้าต้องเป็น JPG, PNG หรือ WebP'
+  if (file.size <= 0) return 'ไฟล์นี้ว่างเปล่า กรุณาเลือกไฟล์ใหม่'
+  if (file.size > 8 * 1024 * 1024) return 'ไฟล์ใหญ่เกิน 8 MB กรุณาเลือกภาพที่เล็กลง'
   return null
 }
 

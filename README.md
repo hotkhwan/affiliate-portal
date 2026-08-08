@@ -18,7 +18,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-The development server listens on `0.0.0.0:3000`. Operational probes are available at `/healthz` and `/readyz`. `NUXT_PUBLIC_MISSION_API_BASE` defaults to the same-origin `/v1` API contract.
+The development server listens on `0.0.0.0:3000`. Operational probes are available at `/healthz` and `/readyz`. `NUXT_PUBLIC_MISSION_API_BASE` defaults to the deployed Development route `/dev/llm-api/v1`; override it with `/v1` when running the API behind a local same-origin proxy.
 
 ## Checks
 

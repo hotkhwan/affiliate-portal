@@ -1,6 +1,7 @@
 import type { ApiErrorBody, Mission, ProductFacts } from '../types/mission'
 
 type Fetcher = typeof globalThis.fetch
+export const PRIVACY_NOTICE_VERSION = '2026-08-08'
 
 export class MissionApiError extends Error {
   constructor(
@@ -14,11 +15,22 @@ export class MissionApiError extends Error {
   }
 }
 
-export function createMissionApi(baseUrl: string, fetcher: Fetcher = globalThis.fetch) {
+export function createMissionApi(
+  baseUrl: string,
+  getAuthenticatedUserId: () => string,
+  fetcher: Fetcher = globalThis.fetch,
+) {
   const base = baseUrl.replace(/\/$/, '')
 
   async function request(path: string, init?: RequestInit): Promise<Mission> {
-    const response = await fetcher(`${base}${path}`, init)
+    const response = await fetcher(`${base}${path}`, {
+      ...init,
+      headers: {
+        ...init?.headers,
+        'X-Authenticated-User-ID': getAuthenticatedUserId(),
+      },
+      signal: init?.signal ?? AbortSignal.timeout(30_000),
+    })
     if (!response.ok) {
       let body: ApiErrorBody = {}
       try {
@@ -38,11 +50,11 @@ export function createMissionApi(baseUrl: string, fetcher: Fetcher = globalThis.
   }
 
   return {
-    create(userId: string, product: ProductFacts) {
+    create(product: ProductFacts, consentAccepted: boolean, privacyNoticeVersion = PRIVACY_NOTICE_VERSION) {
       return request('/missions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ userId, product }),
+        body: JSON.stringify({ product, consentAccepted, privacyNoticeVersion }),
       })
     },
     get(id: string) {
@@ -50,6 +62,13 @@ export function createMissionApi(baseUrl: string, fetcher: Fetcher = globalThis.
     },
     upload(id: string, shot: number, file: File | Blob) {
       return request(`/missions/${encodeURIComponent(id)}/assets/${shot}`, {
+        method: 'PUT',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file,
+      })
+    },
+    uploadProductReference(id: string, index: number, file: File | Blob) {
+      return request(`/missions/${encodeURIComponent(id)}/product-references/${index}`, {
         method: 'PUT',
         headers: { 'content-type': file.type || 'application/octet-stream' },
         body: file,
@@ -66,6 +85,13 @@ export function createMissionApi(baseUrl: string, fetcher: Fetcher = globalThis.
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ platform, postUrl: postUrl || undefined }),
+      })
+    },
+    recordOutcome(id: string, views: number, clicks: number, sales: number) {
+      return request(`/missions/${encodeURIComponent(id)}/outcome`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ views, clicks, sales }),
       })
     },
   }

@@ -48,7 +48,7 @@ docker build \
 - `GET /healthz` is the liveness probe.
 - `GET /readyz` is the readiness probe.
 - `NUXT_PUBLIC_APP_VERSION` and `NUXT_PUBLIC_COMMIT_SHA` identify the running artifact and are safe to expose publicly.
-- `NUXT_PUBLIC_MISSION_API_BASE` selects the public Mission Zero API base path and defaults to same-origin `/v1`; it must never contain credentials.
+- `NUXT_PUBLIC_MISSION_API_BASE` selects the public Mission Zero API base path and defaults to `/dev/llm-api/v1`; it must never contain credentials.
 - Runtime secrets, when introduced by a reviewed feature, must be injected by the deployment platform and must not use the `NUXT_PUBLIC_` prefix.
 
 ## Trigger and evidence contract

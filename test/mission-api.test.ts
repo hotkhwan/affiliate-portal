@@ -19,24 +19,40 @@ describe('mission API client', () => {
       status: 201,
       headers: { 'content-type': 'application/json' },
     }))
-    const api = createMissionApi('/v1/', fetcher as typeof fetch)
+    const api = createMissionApi('/v1/', () => 'alpha-user', fetcher as typeof fetch)
 
-    await expect(api.create('alpha-user', mission.product)).resolves.toMatchObject({ id: 'mission-1' })
+    await expect(api.create(mission.product, true)).resolves.toMatchObject({ id: 'mission-1' })
     expect(fetcher).toHaveBeenCalledWith('/v1/missions', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ userId: 'alpha-user', product: mission.product }),
+      body: JSON.stringify({ product: mission.product, consentAccepted: true, privacyNoticeVersion: '2026-08-08' }),
+      headers: expect.objectContaining({ 'X-Authenticated-User-ID': 'alpha-user' }),
+    }))
+  })
+
+  it('uploads product references and records observed outcomes at their contract endpoints', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(mission), { status: 200 }))
+    const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch)
+    const image = new Blob(['png'], { type: 'image/png' })
+
+    await api.uploadProductReference('mission-1', 1, image)
+    expect(fetcher).toHaveBeenLastCalledWith('/v1/missions/mission-1/product-references/1', expect.objectContaining({ method: 'PUT', body: image }))
+
+    await api.recordOutcome('mission-1', 100, 5, 1)
+    expect(fetcher).toHaveBeenLastCalledWith('/v1/missions/mission-1/outcome', expect.objectContaining({
+      method: 'PUT',
+      body: JSON.stringify({ views: 100, clicks: 5, sales: 1 }),
     }))
   })
 
   it('uploads raw media with the selected content type', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify(mission), { status: 200 }))
-    const api = createMissionApi('/v1', fetcher as typeof fetch)
+    const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch)
     const media = new Blob(['jpeg'], { type: 'image/jpeg' })
 
     await api.upload('mission 1', 2, media)
     expect(fetcher).toHaveBeenCalledWith('/v1/missions/mission%201/assets/2', expect.objectContaining({
       method: 'PUT',
-      headers: { 'content-type': 'image/jpeg' },
+      headers: expect.objectContaining({ 'content-type': 'image/jpeg', 'X-Authenticated-User-ID': 'alpha-user' }),
       body: media,
     }))
   })
@@ -45,7 +61,7 @@ describe('mission API client', () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({
       error: { code: 'invalid_state', message: 'mission cannot perform this action', requestId: 'request-1' },
     }), { status: 409, headers: { 'content-type': 'application/json' } }))
-    const api = createMissionApi('/v1', fetcher as typeof fetch)
+    const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch)
 
     await expect(api.generateDraft('mission-1')).rejects.toEqual(expect.objectContaining<Partial<MissionApiError>>({
       status: 409,

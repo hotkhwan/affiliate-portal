@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { captionText, missionProgress, parseFacts, uploadedShotNumbers, validateProduct } from '../app/lib/mission-flow'
+import { captionText, missionProgress, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
 import type { Mission } from '../app/types/mission'
 
 function fixture(state: Mission['state'] = 'missionAccepted'): Mission {
@@ -57,5 +57,18 @@ describe('mission flow helpers', () => {
     expect(validateProduct({ name: '', description: 'ใช้จัดของ' })).toBeTruthy()
     expect(validateProduct({ name: 'กล่อง', description: '' })).toBeTruthy()
     expect(validateProduct({ name: 'กล่อง', description: 'ใช้จัดของ' })).toBeNull()
+  })
+
+  it('accepts only bounded JPG, PNG, and MP4 capture assets', () => {
+    expect(validateMedia({ type: 'image/jpeg', size: 1 })).toBeNull()
+    expect(validateMedia({ type: 'video/mp4', size: 8 * 1024 * 1024 })).toBeNull()
+    expect(validateMedia({ type: 'image/webp', size: 1 })).toContain('JPG')
+    expect(validateMedia({ type: 'image/png', size: 0 })).toContain('ว่างเปล่า')
+    expect(validateMedia({ type: 'image/png', size: 8 * 1024 * 1024 + 1 })).toContain('8 MB')
+  })
+
+  it('accepts WebP only for the product reference path', () => {
+    expect(validateProductReferenceMedia({ type: 'image/webp', size: 12 })).toBeNull()
+    expect(validateProductReferenceMedia({ type: 'video/mp4', size: 12 })).toContain('ภาพสินค้า')
   })
 })

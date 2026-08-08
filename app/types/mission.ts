@@ -6,6 +6,8 @@ export type MissionState
     | 'draftReady'
     | 'exported'
     | 'posted'
+    | 'resultRecorded'
+    | 'nextMissionReady'
 
 export interface ProductFacts {
   name: string
@@ -28,6 +30,14 @@ export interface MissionAsset {
   sha256: string
 }
 
+export interface ProductReference {
+  index: number
+  storageKey: string
+  contentType: string
+  bytes: number
+  sha256: string
+}
+
 export interface MissionDraft {
   caption: string
   cta: string
@@ -39,6 +49,26 @@ export interface MissionDraft {
     endMs: number
   }>
   generatedBy: string
+  productionSpec?: ProductionSpec
+  roleExecutions?: RoleExecution[]
+}
+
+export interface ProductionSpec {
+  schemaVersion: string
+  projectType: string
+  durationSeconds: number
+  platform: string
+  aspectRatio: string
+  creativeIntent: string
+  storyBeats: string[]
+  continuity: Record<string, unknown>
+  shots: Array<Record<string, unknown>>
+  providerPrompts?: Record<string, string>
+}
+
+export interface RoleExecution {
+  role: string
+  runtime: string
 }
 
 export interface MissionExport {
@@ -46,6 +76,31 @@ export interface MissionExport {
   format: string
   width: number
   height: number
+  jobId?: string
+  downloadUrl?: string
+}
+
+export interface ProcessingJob {
+  id: string
+  kind: string
+  state: 'queued' | 'running' | 'succeeded' | 'failed'
+  attempt: number
+  idempotencyKey: string
+  lastError?: string
+  updatedAt: string
+}
+
+export interface MissionOutcome {
+  views: number
+  clicks: number
+  sales: number
+  recordedAt: string
+}
+
+export interface NextAction {
+  kind: string
+  title: string
+  reason: string
 }
 
 export interface MissionPosted {
@@ -61,9 +116,13 @@ export interface Mission {
   state: MissionState
   shots: MissionShot[]
   assets?: MissionAsset[]
+  productReferences?: ProductReference[]
   draft?: MissionDraft
   export?: MissionExport
+  exportJob?: ProcessingJob
   posted?: MissionPosted
+  outcome?: MissionOutcome
+  nextAction?: NextAction
   version: number
   createdAt: string
   updatedAt: string
