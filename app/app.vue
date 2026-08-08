@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { captionText, missionProgress, missionStep, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
+import { captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
 import { createMissionApi, MissionApiError, PRIVACY_NOTICE_VERSION } from './services/mission-api'
 import { createMissionSession } from './stores/mission-session'
 import type { MissionSession } from './stores/mission-session'
@@ -34,7 +34,7 @@ let retryAction: (() => Promise<void>) | null = null
 const progress = computed(() => missionProgress(mission.value))
 const uploadedShots = computed(() => uploadedShotNumbers(mission.value))
 const hasProductReference = computed(() => Boolean(mission.value?.productReferences?.length))
-const exportProcessing = computed(() => mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
+const exportProcessing = computed(() => mission.value?.state === 'exportQueued' || mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
 const exportFailed = computed(() => mission.value?.exportJob?.state === 'failed')
 const canPost = computed(() => Boolean(mission.value?.export) && !exportProcessing.value && !exportFailed.value)
 const currentStep = computed(() => missionStep(mission.value, captureReviewed.value))
@@ -137,7 +137,10 @@ async function prepareExport() {
 
 async function refreshMission() {
   if (!mission.value) return
-  await run('refresh', () => api.get(mission.value!.id), 'อัปเดตสถานะล่าสุดแล้ว', 'ลองตรวจสถานะอีกครั้ง')
+  const refresh = shouldRefreshExport(mission.value)
+    ? () => api.exportDraft(mission.value!.id)
+    : () => api.get(mission.value!.id)
+  await run('refresh', refresh, 'อัปเดตสถานะล่าสุดแล้ว', 'ลองตรวจสถานะอีกครั้ง')
 }
 
 async function copyCaption() {

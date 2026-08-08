@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { captionText, missionProgress, missionStep, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
+import { captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
 import type { Mission } from '../app/types/mission'
 
 function fixture(state: Mission['state'] = 'missionAccepted'): Mission {
@@ -81,5 +81,24 @@ describe('mission flow helpers', () => {
   it('accepts WebP only for the product reference path', () => {
     expect(validateProductReferenceMedia({ type: 'image/webp', size: 12 })).toBeNull()
     expect(validateProductReferenceMedia({ type: 'video/mp4', size: 12 })).toContain('ภาพสินค้า')
+  })
+
+  it('refreshes queued, absent, or expiring export downloads through the idempotent export endpoint', () => {
+    const now = Date.UTC(2026, 7, 9, 1, 0, 0)
+    const mission = fixture('exportQueued')
+    expect(shouldRefreshExport(mission, now)).toBe(true)
+
+    mission.state = 'exported'
+    mission.export = { storageKey: 'video', format: 'video/mp4', width: 1080, height: 1920 }
+    expect(shouldRefreshExport(mission, now)).toBe(true)
+
+    mission.export.downloadUrl = 'https://s3.example/video?X-Amz-Date=20260809T005000Z&X-Amz-Expires=600'
+    expect(shouldRefreshExport(mission, now)).toBe(true)
+
+    mission.export.downloadUrl = 'https://s3.example/video?X-Amz-Date=20260809T005500Z&X-Amz-Expires=900'
+    expect(shouldRefreshExport(mission, now)).toBe(false)
+
+    mission.state = 'posted'
+    expect(shouldRefreshExport(mission, now)).toBe(false)
   })
 })

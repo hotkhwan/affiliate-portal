@@ -6,6 +6,7 @@ const stateOrder: MissionState[] = [
   'assetsUploaded',
   'draftGenerating',
   'draftReady',
+  'exportQueued',
   'exported',
   'posted',
   'resultRecorded',
@@ -103,4 +104,34 @@ export function captionText(mission: Mission): string {
     mission.draft.cta,
     mission.draft.hashtags.join(' '),
   ].filter(Boolean).join('\n\n')
+}
+
+function presignedExpiry(value: string): number | null {
+  try {
+    const url = new URL(value, 'https://kwanni.invalid')
+    const unixExpiry = Number(url.searchParams.get('Expires'))
+    if (Number.isFinite(unixExpiry) && unixExpiry > 0) return unixExpiry * 1000
+
+    const issued = url.searchParams.get('X-Amz-Date')
+    const lifetime = Number(url.searchParams.get('X-Amz-Expires'))
+    const match = issued?.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/)
+    if (!match || !Number.isFinite(lifetime) || lifetime <= 0) return null
+    const [, year, month, day, hour, minute, second] = match
+    return Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)) + lifetime * 1000
+  }
+  catch {
+    return null
+  }
+}
+
+export function shouldRefreshExport(mission: Mission, now = Date.now()): boolean {
+  if (mission.state === 'exportQueued') return true
+  if (mission.state !== 'exported') return false
+  if (!mission.export?.downloadUrl) return true
+
+  const expiry = presignedExpiry(mission.export.downloadUrl)
+  if (expiry !== null) return expiry <= now + 30_000
+
+  const updatedAt = Date.parse(mission.updatedAt)
+  return Number.isFinite(updatedAt) && updatedAt <= now - 14 * 60_000
 }

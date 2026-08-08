@@ -4,6 +4,7 @@ export type MissionState
     | 'assetsUploaded'
     | 'draftGenerating'
     | 'draftReady'
+    | 'exportQueued'
     | 'exported'
     | 'posted'
     | 'resultRecorded'
