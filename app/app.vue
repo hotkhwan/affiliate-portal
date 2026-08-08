@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
+import { canPostMission, captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
 import { createMissionApi, MissionApiError, PRIVACY_NOTICE_VERSION } from './services/mission-api'
 import { createMissionSession } from './stores/mission-session'
+import { visualQcDefects, visualQcDisplayState, visualQcScore } from './lib/visual-qc'
 import type { MissionSession } from './stores/mission-session'
 import type { Mission, ProductFacts } from './types/mission'
 
@@ -27,6 +28,8 @@ const postUrl = ref('')
 const consentAccepted = ref(false)
 const outcome = reactive({ views: 0, clicks: 0, sales: 0 })
 const captureReviewed = ref(false)
+const visualQcDecision = ref<'accept' | 'reject'>('accept')
+const visualQcReason = ref('')
 const product = reactive<ProductFacts>({ name: '', description: '', price: '', promotion: '', facts: [] })
 const retryLabel = ref('')
 let retryAction: (() => Promise<void>) | null = null
@@ -36,7 +39,9 @@ const uploadedShots = computed(() => uploadedShotNumbers(mission.value))
 const hasProductReference = computed(() => Boolean(mission.value?.productReferences?.length))
 const exportProcessing = computed(() => mission.value?.state === 'exportQueued' || mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
 const exportFailed = computed(() => mission.value?.exportJob?.state === 'failed')
-const canPost = computed(() => Boolean(mission.value?.export) && !exportProcessing.value && !exportFailed.value)
+const canPost = computed(() => canPostMission(mission.value))
+const visualQcState = computed(() => visualQcDisplayState(mission.value?.visualQc))
+const visualQcIssues = computed(() => visualQcDefects(mission.value?.visualQc))
 const currentStep = computed(() => missionStep(mission.value, captureReviewed.value))
 
 function setMission(next: Mission) {
@@ -170,6 +175,22 @@ async function recordOutcome() {
   await run('outcome', () => api.recordOutcome(mission.value!.id, views, clicks, sales), 'บันทึกผลจริงแล้ว นี่คือก้าวถัดไปของคุณ', 'ลองบันทึกผลอีกครั้ง')
 }
 
+async function retryVisualQc() {
+  if (!mission.value) return
+  await run('visual-qc', () => api.requestVisualQc(mission.value!.id), 'เริ่มตรวจภาพอีกครั้งแล้ว คุณยังดาวน์โหลดหรือโพสต์ต่อได้', 'ลองตรวจภาพอีกครั้ง')
+}
+
+async function saveVisualQcOverride() {
+  if (!mission.value) return
+  const reason = visualQcReason.value.trim()
+  if (!reason) {
+    error.value = 'กรุณาบอกเหตุผลสั้น ๆ สำหรับการตัดสินใจของคุณ'
+    return
+  }
+  await run('visual-qc-override', () => api.overrideVisualQc(mission.value!.id, visualQcDecision.value, reason), 'บันทึกการตัดสินใจของคุณแล้ว', 'ลองบันทึกการตัดสินใจอีกครั้ง')
+  if (mission.value?.visualQc?.manualOverride) visualQcReason.value = ''
+}
+
 const platformUrls: Record<string, string> = {
   tiktok: 'https://www.tiktok.com/',
   facebook: 'https://www.facebook.com/',
@@ -196,6 +217,8 @@ function resetMission() {
   factsText.value = ''
   consentAccepted.value = false
   captureReviewed.value = false
+  visualQcDecision.value = 'accept'
+  visualQcReason.value = ''
   outcome.views = 0
   outcome.clicks = 0
   outcome.sales = 0
@@ -437,6 +460,57 @@ onMounted(async () => {
             <h2 v-if="!mission.posted">พร้อมลองตลาดแล้ว</h2>
             <h2 v-else>โพสต์แรกสำเร็จแล้ว 🎉</h2>
 
+            <section class="visual-qc" :class="`qc-${visualQcState}`" aria-labelledby="visual-qc-title">
+              <div class="visual-qc-heading">
+                <div>
+                  <span>Visual QC · คำแนะนำ</span>
+                  <strong id="visual-qc-title">ตรวจภาพและความต่อเนื่อง</strong>
+                </div>
+                <span v-if="mission.visualQc?.latestReport" class="qc-score">{{ visualQcScore(mission.visualQc.latestReport.score) }}</span>
+              </div>
+
+              <p v-if="visualQcState === 'checking'">กำลังตรวจ keyframes แบบเบื้องหลัง คุณดาวน์โหลดและโพสต์ต่อได้เลย</p>
+              <p v-else-if="visualQcState === 'passed'">ไม่พบจุดที่ต้องระวังตามเกณฑ์ภาพยนตร์ของรอบนี้</p>
+              <p v-else-if="visualQcState === 'attention'">มีข้อสังเกตให้ตรวจด้วยตาอีกครั้งก่อนใช้จริง</p>
+              <p v-else-if="visualQcState === 'unavailable'">{{ mission.visualQc?.warning || 'ระบบตรวจภาพยังไม่พร้อมชั่วคราว' }}</p>
+              <p v-else>ยังไม่มีผลตรวจภาพ คุณเริ่มตรวจเมื่อสะดวกหรือโพสต์ต่อได้</p>
+
+              <div v-if="mission.visualQc?.latestReport" class="qc-evidence">
+                <span>หลักฐาน {{ mission.visualQc.latestReport.evidenceFrames.length }} เฟรม</span>
+                <span>{{ mission.visualQc.latestReport.shots.length }} ช็อต</span>
+                <span>เกณฑ์ {{ visualQcScore(mission.visualQc.latestReport.threshold) }}</span>
+                <span>โมเดล {{ mission.visualQc.latestReport.modelRevision }}</span>
+              </div>
+
+              <ul v-if="visualQcIssues.length" class="qc-defects">
+                <li v-for="(defect, index) in visualQcIssues" :key="`${defect.code}-${index}`" :class="`severity-${defect.severity}`">
+                  <strong>{{ defect.severity === 'critical' ? 'ควรตรวจ' : defect.severity === 'warning' ? 'ข้อสังเกต' : 'ข้อมูล' }}</strong>
+                  <span>{{ defect.message }}</span>
+                  <small v-if="defect.evidenceFrameIds.length">อ้างอิง {{ defect.evidenceFrameIds.length }} เฟรม</small>
+                </li>
+              </ul>
+
+              <div v-if="mission.visualQc?.manualOverride" class="qc-override-saved">
+                <strong>บันทึกโดยผู้ใช้: {{ mission.visualQc.manualOverride.decision === 'accept' ? 'ยอมรับวิดีโอนี้' : 'ไม่ใช้วิดีโอนี้' }}</strong>
+                <span>{{ mission.visualQc.manualOverride.reason }}</span>
+              </div>
+
+              <div class="qc-actions">
+                <button v-if="visualQcState === 'idle' || visualQcState === 'unavailable'" class="secondary" type="button" :disabled="Boolean(busy)" @click="retryVisualQc">
+                  {{ busy === 'visual-qc' ? 'กำลังเริ่มตรวจ…' : 'ลองตรวจภาพ' }}
+                </button>
+                <details>
+                  <summary>บันทึกการตัดสินใจด้วยตัวเอง</summary>
+                  <form class="qc-override-form" @submit.prevent="saveVisualQcOverride">
+                    <label><span>การตัดสินใจ</span><select v-model="visualQcDecision"><option value="accept">ยอมรับและใช้วิดีโอนี้</option><option value="reject">ไม่ใช้วิดีโอนี้</option></select></label>
+                    <label><span>เหตุผล</span><input v-model="visualQcReason" maxlength="300" placeholder="เช่น ตรวจสินค้าแล้วตรงกับภาพจริง"></label>
+                    <button class="secondary" type="submit" :disabled="Boolean(busy)">{{ busy === 'visual-qc-override' ? 'กำลังบันทึก…' : 'บันทึกการตัดสินใจ' }}</button>
+                  </form>
+                </details>
+              </div>
+              <small class="qc-advisory">ผลตรวจนี้เป็นคำแนะนำ ไม่ขวางการดาวน์โหลด การโพสต์ หรือการตัดสินใจของคุณ</small>
+            </section>
+
             <template v-if="!mission.posted">
               <div class="export-ready">
                 <span>{{ exportFailed ? '!' : exportProcessing ? '…' : '✓' }}</span>
@@ -613,6 +687,29 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .action-row { display: flex; justify-content: flex-end; gap: 12px; }
 .post-actions { margin: 14px 0; }
 .download-link { display: flex; justify-content: center; align-items: center; min-height: 52px; margin: 14px 0; border-radius: 13px; color: white; background: #1f6b4f; font-weight: 700; text-decoration: none; }
+.visual-qc { display: grid; gap: 13px; margin: 22px 0; padding: 18px; border: 1px solid #d6ddd8; border-radius: 16px; background: #f8faf8; }
+.visual-qc.qc-passed { border-color: #a8cdb4; background: #f3faf5; }
+.visual-qc.qc-attention, .visual-qc.qc-unavailable { border-color: #e0c59d; background: #fffaf1; }
+.visual-qc-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.visual-qc-heading > div { display: grid; gap: 3px; }
+.visual-qc-heading span { color: #69766f; font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.visual-qc-heading strong { color: #173f32; }
+.visual-qc > p { margin: 0; color: #53625d; line-height: 1.6; }
+.qc-score { display: grid; place-items: center; min-width: 54px; height: 38px; border-radius: 999px; color: #1f6b4f !important; background: white; border: 1px solid #bdd2c4; font-size: .9rem !important; }
+.qc-evidence { display: flex; flex-wrap: wrap; gap: 7px; }
+.qc-evidence span { padding: 5px 9px; border-radius: 999px; color: #53625d; background: white; font-size: .7rem; }
+.qc-defects { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.qc-defects li { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: center; padding: 10px; border-left: 3px solid #99aaa1; background: rgba(255,255,255,.7); }
+.qc-defects li.severity-critical { border-color: #b64539; }
+.qc-defects li.severity-warning { border-color: #d38a3d; }
+.qc-defects strong, .qc-defects small { font-size: .7rem; }
+.qc-defects span { color: #44534c; font-size: .82rem; }
+.qc-override-saved { display: grid; gap: 3px; padding: 11px; border-radius: 10px; background: #eaf4ed; font-size: .8rem; }
+.qc-actions { display: flex; align-items: flex-start; gap: 12px; }
+.qc-actions details { flex: 1; }
+.qc-actions summary { color: #1f6b4f; cursor: pointer; font-size: .8rem; font-weight: 700; padding: 9px 0; }
+.qc-override-form { display: grid; gap: 10px; padding-top: 9px; }
+.qc-advisory { color: #737f79; line-height: 1.5; }
 .export-ready, .success-panel { display: flex; gap: 16px; align-items: center; background: #edf7ef; border: 1px solid #c2dfc9; border-radius: 15px; padding: 18px; margin: 24px 0; }
 .export-ready > span, .success-mark { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 50%; color: white; background: #1f6b4f; font-weight: 700; }
 .export-ready strong, .success-panel strong { color: #173f32; }
@@ -649,6 +746,9 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
   .reference-card { align-items: stretch; flex-direction: column; }
   .review-item { align-items: stretch; flex-direction: column; }
   .outcome-grid { grid-template-columns: 1fr; }
+  .qc-defects li { grid-template-columns: 1fr; }
+  .qc-actions { flex-direction: column; }
+  .qc-actions details { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

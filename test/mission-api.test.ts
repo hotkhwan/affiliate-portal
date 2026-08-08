@@ -82,4 +82,18 @@ describe('mission API client', () => {
     expect(timeout.mock.calls.map(call => call[0])).toEqual([1_000, 9_000, 9_000])
     timeout.mockRestore()
   })
+
+  it('starts advisory visual QC and records an explicit human override', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(mission), { status: 200 }))
+    const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch)
+
+    await api.requestVisualQc('mission-1')
+    expect(fetcher).toHaveBeenLastCalledWith('/v1/missions/mission-1/visual-qc', expect.objectContaining({ method: 'POST' }))
+
+    await api.overrideVisualQc('mission-1', 'accept', 'ตรวจด้วยตาแล้วตรงกับสินค้าจริง')
+    expect(fetcher).toHaveBeenLastCalledWith('/v1/missions/mission-1/visual-qc/override', expect.objectContaining({
+      method: 'PUT',
+      body: JSON.stringify({ decision: 'accept', reason: 'ตรวจด้วยตาแล้วตรงกับสินค้าจริง' }),
+    }))
+  })
 })

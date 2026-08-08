@@ -104,6 +104,57 @@ export interface NextAction {
   reason: string
 }
 
+export interface VisualQCEvidenceFrame {
+  id: string
+  storageKey: string
+  timestampMs: number
+}
+
+export interface VisualQCDefect {
+  code: string
+  severity: 'info' | 'warning' | 'critical'
+  message: string
+  evidenceFrameIds: string[]
+}
+
+export interface VisualQCShot {
+  shotId: string
+  metrics: {
+    shotSize: number
+    composition: number
+    cameraAngle: number
+    depth: number
+    lighting: number
+    subjectPlacement: number
+    productPlacement: number
+  }
+  defects: VisualQCDefect[]
+}
+
+export interface VisualQCReport {
+  revision: number
+  modelRevision: string
+  threshold: number
+  score: number
+  passed: boolean
+  evidenceFrames: VisualQCEvidenceFrame[]
+  shots: VisualQCShot[]
+  createdAt: string
+}
+
+export interface VisualQCState {
+  job?: ProcessingJob
+  latestReport?: VisualQCReport
+  history: VisualQCReport[]
+  warning?: string
+  manualOverride?: {
+    decision: 'accept' | 'reject'
+    reason: string
+    by: string
+    at: string
+  }
+}
+
 export interface MissionPosted {
   platform: string
   postUrl?: string
@@ -124,6 +175,7 @@ export interface Mission {
   posted?: MissionPosted
   outcome?: MissionOutcome
   nextAction?: NextAction
+  visualQc?: VisualQCState
   version: number
   createdAt: string
   updatedAt: string

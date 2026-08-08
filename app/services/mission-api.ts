@@ -95,5 +95,15 @@ export function createMissionApi(
         body: JSON.stringify({ views, clicks, sales }),
       })
     },
+    requestVisualQc(id: string) {
+      return request(`/missions/${encodeURIComponent(id)}/visual-qc`, { method: 'POST' })
+    },
+    overrideVisualQc(id: string, decision: 'accept' | 'reject', reason: string) {
+      return request(`/missions/${encodeURIComponent(id)}/visual-qc/override`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ decision, reason }),
+      })
+    },
   }
 }

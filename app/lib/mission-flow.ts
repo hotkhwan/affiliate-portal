@@ -135,3 +135,8 @@ export function shouldRefreshExport(mission: Mission, now = Date.now()): boolean
   const updatedAt = Date.parse(mission.updatedAt)
   return Number.isFinite(updatedAt) && updatedAt <= now - 14 * 60_000
 }
+
+export function canPostMission(mission?: Mission | null): boolean {
+  if (!mission?.export || mission.state === 'exportQueued') return false
+  return mission.exportJob?.state !== 'queued' && mission.exportJob?.state !== 'running' && mission.exportJob?.state !== 'failed'
+}

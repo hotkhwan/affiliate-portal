@@ -18,6 +18,7 @@ The browser calls the reviewed `llm-api` Mission Zero contract under `/dev/llm-a
 - Alpha capture accepts JPEG, PNG, and MP4 files up to the API contract limit of 8 MB per shot; product references also accept WebP.
 - After all required media exists, the user must pass a dedicated review step and may replace any reference or shot before draft generation.
 - Export is asynchronous. The UI displays queued/running/failed state, refreshes the saved mission, and offers a download only when the API returns a real `downloadUrl`.
+- Visual QC is advisory and load-on-demand. The UI may show ShotVL score, per-shot defects, and keyframe evidence, but cold starts, failure, or a low score never block download or manual posting. The user can explicitly record an accept/reject override with a reason.
 - Posting remains manual. The user records the platform and may optionally record the public post URL.
 - Views, clicks, and sales are optional observed results; the API enforces `views >= clicks >= sales >= 0` and returns the next action. No result is treated as guaranteed income.
 - The installable mobile shell supports keyboard focus, reduced motion, resumable browser state, explicit retries, and a Service Worker that never caches Mission API requests.

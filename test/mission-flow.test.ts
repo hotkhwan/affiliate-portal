@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
+import { canPostMission, captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
 import type { Mission } from '../app/types/mission'
 
 function fixture(state: Mission['state'] = 'missionAccepted'): Mission {
@@ -100,5 +100,16 @@ describe('mission flow helpers', () => {
 
     mission.state = 'posted'
     expect(shouldRefreshExport(mission, now)).toBe(false)
+  })
+
+  it('never lets advisory visual QC block an otherwise completed export', () => {
+    const mission = fixture('exported')
+    mission.export = { storageKey: 'video', format: 'video/mp4', width: 1080, height: 1920, downloadUrl: 'https://s3/video' }
+    mission.exportJob = { id: 'export-1', kind: 'ffmpegExport', state: 'succeeded', attempt: 1, idempotencyKey: 'export:1', updatedAt: mission.updatedAt }
+    mission.visualQc = { history: [], warning: 'ShotVL cold start failed' }
+    expect(canPostMission(mission)).toBe(true)
+
+    mission.state = 'exportQueued'
+    expect(canPostMission(mission)).toBe(false)
   })
 })
