@@ -18,7 +18,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-The development server listens on `0.0.0.0:3000`. Operational probes are available at `/healthz` and `/readyz`. `NUXT_APP_BASE_URL` defaults to `/dev/llm-portal/`, while `NUXT_PUBLIC_MISSION_API_BASE` defaults to `/dev/llm-api/v1`; override both when running at another path. Normal requests use a 30-second deadline. Draft and export use the separately configurable 120-second deadline until those operations move fully behind asynchronous jobs.
+The development server listens on `0.0.0.0:3000`. Operational probes are available at `/healthz` and `/readyz`. `NUXT_APP_BASE_URL` defaults to `/dev/llm-portal/`, while `NUXT_PUBLIC_MISSION_API_BASE` defaults to `/dev/llm-api/v1`; override both when running at another path. Set `NUXT_DEV_ALLOWED_HOSTS` to the comma-separated Gateway host names used for this Development site. The list is explicit and never disables Vite's DNS-rebinding protection. Normal requests use a 30-second deadline. Draft and export use the separately configurable 120-second deadline until those operations move fully behind asynchronous jobs.
 
 ## Checks
 

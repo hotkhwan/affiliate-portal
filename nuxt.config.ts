@@ -1,3 +1,5 @@
+import { developmentAllowedHosts } from './config/development-hosts'
+
 const appBaseSegments = (process.env.NUXT_APP_BASE_URL || '/dev/llm-portal/').split('/').filter(Boolean).join('/')
 const appBaseURL = appBaseSegments ? `/${appBaseSegments}/` : '/'
 
@@ -11,6 +13,13 @@ export default defineNuxtConfig({
   devServer: {
     host: '0.0.0.0',
     port: 3000,
+  },
+  vite: {
+    server: {
+      // Development runs behind the per-site Gateway. Keep this an explicit
+      // host list so Vite's DNS-rebinding protection remains enabled.
+      allowedHosts: developmentAllowedHosts(process.env.NUXT_DEV_ALLOWED_HOSTS),
+    },
   },
   devtools: { enabled: false },
   modules: ['@nuxt/eslint'],
