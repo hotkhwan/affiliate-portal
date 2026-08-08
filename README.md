@@ -18,7 +18,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-The development server listens on `0.0.0.0:3000`. Operational probes are available at `/healthz` and `/readyz`. `NUXT_PUBLIC_MISSION_API_BASE` defaults to the deployed Development route `/dev/llm-api/v1`; override it with `/v1` when running the API behind a local same-origin proxy.
+The development server listens on `0.0.0.0:3000`. Operational probes are available at `/healthz` and `/readyz`. `NUXT_APP_BASE_URL` defaults to `/dev/llm-portal/`, while `NUXT_PUBLIC_MISSION_API_BASE` defaults to `/dev/llm-api/v1`; override both when running at another path. Normal requests use a 30-second deadline. Draft and export use the separately configurable 120-second deadline until those operations move fully behind asynchronous jobs.
 
 ## Checks
 

@@ -49,13 +49,14 @@ export function createMissionSession(
   storage: Storage,
   createId: () => string = () => crypto.randomUUID(),
 ): MissionSession {
+  let memoryUserId = safeGet(storage, ALPHA_USER_KEY)
+
   return {
     getUserId() {
-      const existing = safeGet(storage, ALPHA_USER_KEY)
-      if (existing) return existing
-      const id = `alpha-${createId()}`
-      safeSet(storage, ALPHA_USER_KEY, id)
-      return id
+      if (memoryUserId) return memoryUserId
+      memoryUserId = `alpha-${createId()}`
+      safeSet(storage, ALPHA_USER_KEY, memoryUserId)
+      return memoryUserId
     },
     activeMissionId() {
       return safeGet(storage, ACTIVE_MISSION_KEY)

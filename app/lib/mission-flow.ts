@@ -18,6 +18,17 @@ export interface ProgressItem {
   current: boolean
 }
 
+export type MissionStep = 'product' | 'capture' | 'review' | 'draft' | 'export' | 'post'
+
+export function missionStep(mission: Mission | null | undefined, captureReviewed: boolean): MissionStep {
+  if (!mission) return 'product'
+  if (uploadedShotNumbers(mission).size !== 3 || !(mission.productReferences?.length)) return 'capture'
+  if (!mission.draft && !captureReviewed) return 'review'
+  if (!mission.draft) return 'draft'
+  if (!mission.export) return 'export'
+  return 'post'
+}
+
 export function missionProgress(mission?: Mission | null): ProgressItem[] {
   const currentIndex = mission ? stateOrder.indexOf(mission.state) : -1
   const assets = new Set((mission?.assets ?? []).map(asset => asset.shot))

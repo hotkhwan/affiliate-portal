@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { captionText, missionProgress, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
+import { captionText, missionProgress, missionStep, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from '../app/lib/mission-flow'
 import type { Mission } from '../app/types/mission'
 
 function fixture(state: Mission['state'] = 'missionAccepted'): Mission {
@@ -36,6 +36,17 @@ describe('mission flow helpers', () => {
 
     expect([...uploadedShotNumbers(mission)]).toEqual([1, 2, 3])
     expect(missionProgress(mission).map(item => item.complete)).toEqual([true, true, true, false, false])
+  })
+
+  it('requires an explicit capture review before draft generation', () => {
+    const mission = fixture('assetsUploaded')
+    mission.productReferences = [{ index: 1, storageKey: 'product', contentType: 'image/jpeg', bytes: 1, sha256: 'p' }]
+    mission.assets = [1, 2, 3].map(shot => ({ shot, storageKey: `${shot}`, contentType: 'image/jpeg', bytes: 1, sha256: `${shot}` }))
+
+    expect(missionStep(mission, false)).toBe('review')
+    expect(missionStep(mission, true)).toBe('draft')
+    mission.assets.pop()
+    expect(missionStep(mission, true)).toBe('capture')
   })
 
   it('builds a copyable caption without exposing its provider', () => {

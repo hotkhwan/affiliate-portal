@@ -45,6 +45,7 @@ describe('mission session', () => {
     }) as Storage
     const session = createMissionSession(storage, () => 'fallback')
     expect(session.getUserId()).toBe('alpha-fallback')
+    expect(session.getUserId()).toBe('alpha-fallback')
     expect(() => session.clearMission()).not.toThrow()
   })
 })

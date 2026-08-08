@@ -69,4 +69,17 @@ describe('mission API client', () => {
       requestId: 'request-1',
     }))
   })
+
+  it('uses the longer configurable deadline only for planning and export work', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(mission), { status: 200 }))
+    const timeout = vi.spyOn(AbortSignal, 'timeout')
+    const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch, { requestMs: 1_000, longRequestMs: 9_000 })
+
+    await api.get('mission-1')
+    await api.generateDraft('mission-1')
+    await api.exportDraft('mission-1')
+
+    expect(timeout.mock.calls.map(call => call[0])).toEqual([1_000, 9_000, 9_000])
+    timeout.mockRestore()
+  })
 })

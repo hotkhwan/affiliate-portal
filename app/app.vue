@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { captionText, missionProgress, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
+import { captionText, missionProgress, missionStep, parseFacts, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
 import { createMissionApi, MissionApiError, PRIVACY_NOTICE_VERSION } from './services/mission-api'
 import { createMissionSession } from './stores/mission-session'
 import type { MissionSession } from './stores/mission-session'
@@ -7,7 +7,15 @@ import type { Mission, ProductFacts } from './types/mission'
 
 const config = useRuntimeConfig()
 let session: MissionSession | null = null
-const api = createMissionApi(config.public.missionApiBase, () => session?.getUserId() ?? '')
+const api = createMissionApi(
+  config.public.missionApiBase,
+  () => session?.getUserId() ?? '',
+  globalThis.fetch,
+  {
+    requestMs: config.public.missionRequestTimeoutMs,
+    longRequestMs: config.public.missionLongRequestTimeoutMs,
+  },
+)
 const mission = ref<Mission | null>(null)
 const busy = ref('')
 const message = ref('')
@@ -18,24 +26,18 @@ const platform = ref('tiktok')
 const postUrl = ref('')
 const consentAccepted = ref(false)
 const outcome = reactive({ views: 0, clicks: 0, sales: 0 })
+const captureReviewed = ref(false)
 const product = reactive<ProductFacts>({ name: '', description: '', price: '', promotion: '', facts: [] })
 const retryLabel = ref('')
 let retryAction: (() => Promise<void>) | null = null
 
 const progress = computed(() => missionProgress(mission.value))
 const uploadedShots = computed(() => uploadedShotNumbers(mission.value))
-const allShotsUploaded = computed(() => uploadedShots.value.size === 3)
 const hasProductReference = computed(() => Boolean(mission.value?.productReferences?.length))
 const exportProcessing = computed(() => mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
 const exportFailed = computed(() => mission.value?.exportJob?.state === 'failed')
 const canPost = computed(() => Boolean(mission.value?.export) && !exportProcessing.value && !exportFailed.value)
-const currentStep = computed(() => {
-  if (!mission.value) return 'product'
-  if (!allShotsUploaded.value || !hasProductReference.value) return 'capture'
-  if (!mission.value.draft) return 'draft'
-  if (!mission.value.export) return 'export'
-  return 'post'
-})
+const currentStep = computed(() => missionStep(mission.value, captureReviewed.value))
 
 function setMission(next: Mission) {
   mission.value = next
@@ -97,6 +99,7 @@ async function uploadShot(shot: number, event: Event) {
     input.value = ''
     return
   }
+  captureReviewed.value = false
   await run(`shot-${shot}`, () => api.upload(mission.value!.id, shot, file), `บันทึกช็อต ${shot} แล้ว`, `ลองบันทึกช็อต ${shot} อีกครั้ง`)
   input.value = ''
 }
@@ -111,8 +114,15 @@ async function uploadProductReference(event: Event) {
     input.value = ''
     return
   }
+  captureReviewed.value = false
   await run('product-reference', () => api.uploadProductReference(mission.value!.id, 1, file), 'บันทึกภาพสินค้าจริงแล้ว', 'ลองบันทึกภาพสินค้าอีกครั้ง')
   input.value = ''
+}
+
+function confirmCapture() {
+  captureReviewed.value = true
+  error.value = ''
+  message.value = 'ตรวจครบแล้ว พร้อมสร้างโพสต์ฉบับร่าง'
 }
 
 async function generateDraft() {
@@ -182,6 +192,7 @@ function resetMission() {
   product.promotion = ''
   factsText.value = ''
   consentAccepted.value = false
+  captureReviewed.value = false
   outcome.views = 0
   outcome.clicks = 0
   outcome.sales = 0
@@ -232,8 +243,7 @@ onMounted(async () => {
   }
   await restoreMission()
   if ('serviceWorker' in navigator) {
-    const pageBase = `${window.location.pathname.replace(/\/?$/, '/')}`
-    navigator.serviceWorker.register(`${pageBase}sw.js`).catch(() => {})
+    navigator.serviceWorker.register(`${config.app.baseURL}sw.js`, { scope: config.app.baseURL }).catch(() => {})
   }
 })
 </script>
@@ -357,8 +367,33 @@ onMounted(async () => {
             </ol>
           </template>
 
-          <template v-else-if="currentStep === 'draft' && mission">
+          <template v-else-if="currentStep === 'review' && mission">
             <div class="section-number">03</div>
+            <p class="section-label">ตรวจสิ่งที่ถ่าย</p>
+            <h2>ครบแล้ว ตรวจอีกครั้งก่อนสร้างโพสต์</h2>
+            <p class="section-copy">ถ้ามีภาพผิดหรือไม่ชัด เปลี่ยนได้ตอนนี้ เมื่อยืนยันแล้วจึงค่อยสร้างฉบับร่าง</p>
+
+            <div class="review-list">
+              <div class="review-item">
+                <div><strong>✓ ภาพสินค้าจริง</strong><p>ใช้ยืนยันสี รูปทรง และฉลาก</p></div>
+                <label class="upload-button" :class="{ disabled: Boolean(busy) }">
+                  {{ busy === 'product-reference' ? 'กำลังเปลี่ยน…' : 'เปลี่ยนภาพ' }}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" :disabled="Boolean(busy)" @change="uploadProductReference">
+                </label>
+              </div>
+              <div v-for="shot in mission.shots" :key="shot.number" class="review-item">
+                <div><strong>✓ Shot {{ shot.number }}</strong><p>{{ shot.instruction }}</p></div>
+                <label class="upload-button" :class="{ disabled: Boolean(busy) }">
+                  {{ busy === `shot-${shot.number}` ? 'กำลังเปลี่ยน…' : 'เปลี่ยนไฟล์' }}
+                  <input type="file" accept="image/jpeg,image/png,video/mp4" capture="environment" :disabled="Boolean(busy)" @change="uploadShot(shot.number, $event)">
+                </label>
+              </div>
+            </div>
+            <button class="primary full" type="button" :disabled="Boolean(busy)" @click="confirmCapture">ยืนยันภาพและ 3 ช็อต →</button>
+          </template>
+
+          <template v-else-if="currentStep === 'draft' && mission">
+            <div class="section-number">04</div>
             <p class="section-label">เตรียมโพสต์</p>
             <h2>ครบแล้ว พร้อมจัดเป็นโพสต์</h2>
             <p class="section-copy">KWANNI จะเรียง 3 ช็อตและเขียน Caption จากข้อมูลจริงที่คุณให้ไว้ หากระบบช่วยเขียนไม่พร้อม จะใช้ฉบับมาตรฐานแทนโดยงานไม่สะดุด</p>
@@ -373,7 +408,7 @@ onMounted(async () => {
           </template>
 
           <template v-else-if="currentStep === 'export' && mission?.draft">
-            <div class="section-number">04</div>
+            <div class="section-number">05</div>
             <p class="section-label">ตรวจโพสต์ฉบับร่าง</p>
             <h2>อ่านแล้วใช่แบบที่คุณอยากพูดไหม?</h2>
             <div class="caption-card">
@@ -394,7 +429,7 @@ onMounted(async () => {
           </template>
 
           <template v-else-if="currentStep === 'post' && mission">
-            <div class="section-number">05</div>
+            <div class="section-number">06</div>
             <p class="section-label">โพสต์และบันทึกผล</p>
             <h2 v-if="!mission.posted">พร้อมลองตลาดแล้ว</h2>
             <h2 v-else>โพสต์แรกสำเร็จแล้ว 🎉</h2>
@@ -561,6 +596,9 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .shot-number { display: grid; place-items: center; width: 42px; height: 42px; color: #1f6b4f; background: #e3eee6; border-radius: 50%; font-weight: 700; }
 .shot-list strong { color: #173f32; }
 .shot-list p { margin: 3px 0 0; color: #617069; font-size: .88rem; }
+.review-list { display: grid; gap: 10px; margin: 22px 0; }
+.review-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px; border: 1px solid #c8ddce; border-radius: 13px; background: #f4faf6; }
+.review-item p { margin: 3px 0 0; color: #617069; font-size: .82rem; }
 .upload-button { position: relative; overflow: hidden; color: #1f6b4f; border: 1px solid #a9c6b5; background: white; padding: 9px 13px; border-radius: 10px; font-size: .78rem; font-weight: 700; }
 .upload-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .upload-button.disabled { opacity: .6; cursor: wait; }
@@ -606,6 +644,7 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
   .upload-button { grid-column: 1 / -1; text-align: center; }
   .action-row { display: grid; }
   .reference-card { align-items: stretch; flex-direction: column; }
+  .review-item { align-items: stretch; flex-direction: column; }
   .outcome-grid { grid-template-columns: 1fr; }
 }
 

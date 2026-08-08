@@ -19,17 +19,18 @@ export function createMissionApi(
   baseUrl: string,
   getAuthenticatedUserId: () => string,
   fetcher: Fetcher = globalThis.fetch,
+  timeout = { requestMs: 30_000, longRequestMs: 120_000 },
 ) {
   const base = baseUrl.replace(/\/$/, '')
 
-  async function request(path: string, init?: RequestInit): Promise<Mission> {
+  async function request(path: string, init?: RequestInit, timeoutMs = timeout.requestMs): Promise<Mission> {
     const response = await fetcher(`${base}${path}`, {
       ...init,
       headers: {
         ...init?.headers,
         'X-Authenticated-User-ID': getAuthenticatedUserId(),
       },
-      signal: init?.signal ?? AbortSignal.timeout(30_000),
+      signal: init?.signal ?? AbortSignal.timeout(timeoutMs),
     })
     if (!response.ok) {
       let body: ApiErrorBody = {}
@@ -75,10 +76,10 @@ export function createMissionApi(
       })
     },
     generateDraft(id: string) {
-      return request(`/missions/${encodeURIComponent(id)}/draft`, { method: 'POST' })
+      return request(`/missions/${encodeURIComponent(id)}/draft`, { method: 'POST' }, timeout.longRequestMs)
     },
     exportDraft(id: string) {
-      return request(`/missions/${encodeURIComponent(id)}/export`, { method: 'POST' })
+      return request(`/missions/${encodeURIComponent(id)}/export`, { method: 'POST' }, timeout.longRequestMs)
     },
     markPosted(id: string, platform: string, postUrl?: string) {
       return request(`/missions/${encodeURIComponent(id)}/posted`, {
