@@ -2,7 +2,8 @@
 import { canPostMission, captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, uploadedShotNumbers, validateMedia, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
 import { createMissionApi, MissionApiError, PRIVACY_NOTICE_VERSION } from './services/mission-api'
 import { createMissionSession } from './stores/mission-session'
-import { visualQcDefects, visualQcDisplayState, visualQcScore } from './lib/visual-qc'
+import { createVisualQcPoller, visualQcDefects, visualQcDisplayState, visualQcScore } from './lib/visual-qc'
+import type { VisualQcPoller } from './lib/visual-qc'
 import type { MissionSession } from './stores/mission-session'
 import type { Mission, ProductFacts } from './types/mission'
 
@@ -33,6 +34,7 @@ const visualQcReason = ref('')
 const product = reactive<ProductFacts>({ name: '', description: '', price: '', promotion: '', facts: [] })
 const retryLabel = ref('')
 let retryAction: (() => Promise<void>) | null = null
+let visualQcPoller: VisualQcPoller | null = null
 
 const progress = computed(() => missionProgress(mission.value))
 const uploadedShots = computed(() => uploadedShotNumbers(mission.value))
@@ -257,8 +259,18 @@ watch([() => product.name, () => product.description, () => product.price, () =>
   session.saveProductDraft({ ...product, factsText: factsText.value })
 })
 
+watch(() => mission.value?.visualQc?.job?.state, (state) => {
+  if (state === 'queued' || state === 'running') visualQcPoller?.start()
+  else visualQcPoller?.stop()
+})
+
 onMounted(async () => {
   session = createMissionSession(localStorage)
+  visualQcPoller = createVisualQcPoller({
+    current: () => mission.value,
+    refresh: id => api.get(id),
+    update: setMission,
+  })
   const saved = session.loadProductDraft()
   if (saved) {
     product.name = saved.name
@@ -268,10 +280,13 @@ onMounted(async () => {
     factsText.value = saved.factsText
   }
   await restoreMission()
+  visualQcPoller.start()
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register(`${config.app.baseURL}sw.js`, { scope: config.app.baseURL }).catch(() => {})
   }
 })
+
+onBeforeUnmount(() => visualQcPoller?.stop())
 </script>
 
 <template>
