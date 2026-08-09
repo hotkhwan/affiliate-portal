@@ -19,42 +19,35 @@ export interface ProgressItem {
   current: boolean
 }
 
-export type MissionStep = 'product' | 'capture' | 'review' | 'draft' | 'export' | 'post'
+export type MissionStep = 'product' | 'capture' | 'draft' | 'export' | 'post'
 
-export function missionStep(mission: Mission | null | undefined, captureReviewed: boolean): MissionStep {
+export function missionStep(mission: Mission | null | undefined, _captureReviewed = false): MissionStep {
   if (!mission) return 'product'
-  if (uploadedShotNumbers(mission).size !== 3 || !(mission.productReferences?.length)) return 'capture'
-  if (!mission.draft && !captureReviewed) return 'review'
+  if (!(mission.productReferences?.length)) return 'capture'
   if (!mission.draft) return 'draft'
-  if (!mission.export) return 'export'
-  return 'post'
+  return mission.export ? 'post' : 'export'
 }
 
 export function missionProgress(mission?: Mission | null): ProgressItem[] {
   const currentIndex = mission ? stateOrder.indexOf(mission.state) : -1
-  const assets = new Set((mission?.assets ?? []).map(asset => asset.shot))
+  const hasReference = Boolean(mission?.productReferences?.length)
 
   return [
     { label: 'เริ่มภารกิจแรก', complete: Boolean(mission), current: !mission },
     {
-      label: 'ถ่ายครบ 3 ช็อต',
-      complete: assets.size === 3,
-      current: Boolean(mission) && assets.size < 3 && currentIndex <= 1,
+      label: 'เพิ่มภาพสินค้า 1 ภาพ',
+      complete: hasReference,
+      current: Boolean(mission) && !hasReference,
     },
     {
-      label: 'ได้โพสต์ฉบับร่าง',
+      label: 'ทีม Creative วางแผน',
       complete: currentIndex >= stateOrder.indexOf('draftReady'),
       current: currentIndex === stateOrder.indexOf('assetsUploaded') || currentIndex === stateOrder.indexOf('draftGenerating'),
     },
     {
-      label: 'เตรียมไฟล์พร้อมโพสต์',
-      complete: currentIndex >= stateOrder.indexOf('exported'),
-      current: currentIndex === stateOrder.indexOf('draftReady'),
-    },
-    {
-      label: 'โพสต์ชิ้นแรก',
-      complete: currentIndex >= stateOrder.indexOf('posted'),
-      current: currentIndex === stateOrder.indexOf('exported'),
+      label: 'Prompt Veo / Seedance พร้อมใช้',
+      complete: Boolean(mission?.draft?.renderPrompts),
+      current: currentIndex >= stateOrder.indexOf('draftReady'),
     },
   ]
 }

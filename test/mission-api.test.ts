@@ -24,7 +24,7 @@ describe('mission API client', () => {
     await expect(api.create(mission.product, true)).resolves.toMatchObject({ id: 'mission-1' })
     expect(fetcher).toHaveBeenCalledWith('/v1/missions', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ product: mission.product, consentAccepted: true, privacyNoticeVersion: '2026-08-08' }),
+      body: JSON.stringify({ product: mission.product, consentAccepted: true, privacyNoticeVersion: '2026-08-08', locale: 'th' }),
       headers: expect.objectContaining({ 'X-Authenticated-User-ID': 'alpha-user' }),
     }))
   })

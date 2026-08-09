@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import type { ProgressItem } from '../lib/mission-flow'
 
-defineProps<{
+withDefaults(defineProps<{
   items: ProgressItem[]
   posted: boolean
-}>()
+  heading?: string
+  ariaLabel?: string
+  resetLabel?: string
+}>(), {
+  heading: 'ก้าวของคุณ',
+  ariaLabel: 'ความคืบหน้าภารกิจ',
+  resetLabel: 'เริ่มภารกิจถัดไป →',
+})
 
 defineEmits<{
   reset: []
@@ -12,10 +19,10 @@ defineEmits<{
 </script>
 
 <template>
-  <aside class="progress-card" aria-label="ความคืบหน้าภารกิจ">
+  <aside class="progress-card" :aria-label="ariaLabel">
     <div class="progress-heading">
-      <span>ก้าวของคุณ</span>
-      <strong>{{ items.filter(item => item.complete).length }}/5</strong>
+      <span>{{ heading }}</span>
+      <strong>{{ items.filter(item => item.complete).length }}/{{ items.length }}</strong>
     </div>
     <ol>
       <li v-for="item in items" :key="item.label" :class="{ complete: item.complete, current: item.current }">
@@ -24,7 +31,7 @@ defineEmits<{
       </li>
     </ol>
     <button v-if="posted" class="text-button" type="button" @click="$emit('reset')">
-      เริ่มภารกิจถัดไป →
+      {{ resetLabel }}
     </button>
   </aside>
 </template>

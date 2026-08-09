@@ -38,10 +38,10 @@ export default defineNuxtConfig({
   app: {
     baseURL: appBaseURL,
     head: {
-      title: 'KWANNI — เริ่ม Affiliate แบบทีละขั้น',
+      title: 'KWANNI Creative Brain — One image to video plan',
       meta: [
         { name: 'theme-color', content: '#1f6b4f' },
-        { name: 'description', content: 'เลือกสินค้า ถ่าย 3 ช็อต และเตรียม Affiliate Post แรกแบบทีละขั้น' },
+        { name: 'description', content: 'Create a grounded three-shot video plan and Veo / Seedance prompts from one real product image.' },
       ],
       link: [
         { rel: 'manifest', href: `${appBaseURL}manifest.webmanifest` },

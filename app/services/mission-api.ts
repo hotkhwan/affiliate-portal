@@ -51,11 +51,11 @@ export function createMissionApi(
   }
 
   return {
-    create(product: ProductFacts, consentAccepted: boolean, privacyNoticeVersion = PRIVACY_NOTICE_VERSION) {
+    create(product: ProductFacts, consentAccepted: boolean, privacyNoticeVersion = PRIVACY_NOTICE_VERSION, locale: 'th' | 'en' | 'zh' = 'th') {
       return request('/missions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ product, consentAccepted, privacyNoticeVersion }),
+        body: JSON.stringify({ product, consentAccepted, privacyNoticeVersion, locale }),
       })
     },
     get(id: string) {

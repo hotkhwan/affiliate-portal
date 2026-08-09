@@ -35,17 +35,19 @@ describe('mission flow helpers', () => {
     ]
 
     expect([...uploadedShotNumbers(mission)]).toEqual([1, 2, 3])
-    expect(missionProgress(mission).map(item => item.complete)).toEqual([true, true, true, false, false])
+    mission.productReferences = [{ index: 1, storageKey: 'product', contentType: 'image/jpeg', bytes: 1, sha256: 'p' }]
+    expect(missionProgress(mission).map(item => item.complete)).toEqual([true, true, true, false])
   })
 
-  it('requires an explicit capture review before draft generation', () => {
+  it('requires only one product reference before draft generation', () => {
     const mission = fixture('assetsUploaded')
     mission.productReferences = [{ index: 1, storageKey: 'product', contentType: 'image/jpeg', bytes: 1, sha256: 'p' }]
     mission.assets = [1, 2, 3].map(shot => ({ shot, storageKey: `${shot}`, contentType: 'image/jpeg', bytes: 1, sha256: `${shot}` }))
 
-    expect(missionStep(mission, false)).toBe('review')
+    expect(missionStep(mission, false)).toBe('draft')
+    mission.assets = []
     expect(missionStep(mission, true)).toBe('draft')
-    mission.assets.pop()
+    mission.productReferences = []
     expect(missionStep(mission, true)).toBe('capture')
   })
 

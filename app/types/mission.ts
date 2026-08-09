@@ -52,6 +52,16 @@ export interface MissionDraft {
   generatedBy: string
   productionSpec?: ProductionSpec
   roleExecutions?: RoleExecution[]
+  renderPrompts?: {
+    veo: RenderPrompt
+    seedance: RenderPrompt
+  }
+}
+
+export interface RenderPrompt {
+  provider: 'veo' | 'seedance'
+  adapterVersion: string
+  prompt: string
 }
 
 export interface ProductionSpec {
@@ -164,6 +174,7 @@ export interface MissionPosted {
 export interface Mission {
   id: string
   userId: string
+  locale?: 'th' | 'en' | 'zh'
   product: ProductFacts
   state: MissionState
   shots: MissionShot[]
