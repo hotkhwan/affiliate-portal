@@ -61,6 +61,7 @@ function changeLocale(event: Event) {
 
 const progress = computed(() => missionProgress(mission.value).map(item => ({ ...item, label: tr(item.label) })))
 const hasProductReference = computed(() => Boolean(mission.value?.productReferences?.length))
+const productReference = computed(() => mission.value?.productReferences?.[0])
 const exportProcessing = computed(() => mission.value?.state === 'exportQueued' || mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
 const exportFailed = computed(() => mission.value?.exportJob?.state === 'failed')
 const canPost = computed(() => canPostMission(mission.value))
@@ -488,6 +489,16 @@ onBeforeUnmount(() => {
             <div class="section-number">04</div>
             <p class="section-label">{{ tr('Canonical Production Spec') }}</p>
             <h2>{{ tr('แผน 3 ช็อตและ Prompt พร้อมแล้ว') }}</h2>
+            <section class="fidelity-card">
+              <img v-if="productReference?.downloadUrl" :src="productReference.downloadUrl" :alt="tr('ภาพสินค้าต้นฉบับที่ต้องแนบไปกับ Prompt')">
+              <div>
+                <p class="section-label">{{ tr('Product Fidelity · สำคัญมาก') }}</p>
+                <strong>{{ tr('ต้องแนบภาพนี้ไปพร้อม Prompt ทุกครั้ง') }}</strong>
+                <p>{{ tr('อย่าใช้ Prompt เพียงอย่างเดียว ให้เลือก Image-to-Video และใช้ภาพนี้เป็น first frame หรือ product reference') }}</p>
+                <a v-if="productReference?.downloadUrl" class="secondary reference-download" :href="productReference.downloadUrl" target="_blank" rel="noopener">{{ tr('ดาวน์โหลดภาพต้นฉบับ ↓') }}</a>
+                <small>SHA-256: {{ productReference?.sha256?.slice(0, 16) }}…</small>
+              </div>
+            </section>
             <div class="caption-card">
               <p>{{ mission.draft.caption }}</p>
               <p>{{ mission.draft.cta }}</p>
@@ -503,6 +514,7 @@ onBeforeUnmount(() => {
               <article v-for="provider in (['veo', 'seedance'] as const)" :key="provider" class="prompt-card">
                 <div><strong>{{ provider === 'veo' ? 'Veo' : 'Seedance' }}</strong><small>{{ mission.draft.renderPrompts[provider].adapterVersion }}</small></div>
                 <textarea :value="mission.draft.renderPrompts[provider].prompt" rows="10" readonly />
+                <small class="prompt-warning">{{ tr('⚠ แนบภาพสินค้าต้นฉบับด้านบนพร้อม Prompt นี้') }}</small>
                 <button class="secondary" type="button" @click="copyProviderPrompt(provider)">{{ copiedPrompt === provider ? tr('✓ คัดลอกแล้ว') : tr('คัดลอก Prompt') }}</button>
               </article>
             </div>
@@ -745,6 +757,13 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .caption-card p { color: #35483f; line-height: 1.7; }
 .hashtags { color: #1f6b4f !important; }
 .creative-shot-grid, .prompt-grid { display: grid; gap: 14px; margin: 22px 0; }
+.fidelity-card { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 20px; margin: 22px 0; padding: 18px; border: 2px solid #1f6b4f; border-radius: 18px; background: #f3faf5; }
+.fidelity-card > img { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 12px; background: white; border: 1px solid #d4e3d8; }
+.fidelity-card > div { display: grid; align-content: center; justify-items: start; gap: 9px; }
+.fidelity-card strong { color: #173f32; font-size: 1.05rem; }
+.fidelity-card p { margin: 0; color: #53625d; line-height: 1.6; }
+.fidelity-card small { color: #78857f; overflow-wrap: anywhere; }
+.reference-download { min-height: 42px; text-decoration: none; }
 .creative-shot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .creative-shot { display: grid; gap: 8px; padding: 16px; border: 1px solid #c8ddce; border-radius: 14px; background: #f4faf6; }
 .creative-shot span { color: #1f6b4f; font-size: .75rem; font-weight: 700; }
@@ -753,6 +772,7 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .prompt-card { display: grid; gap: 10px; padding: 16px; border: 1px solid #d5ddd7; border-radius: 15px; background: #fbfcfa; }
 .prompt-card > div { display: flex; justify-content: space-between; gap: 10px; color: #173f32; }
 .prompt-card small { color: #718079; }
+.prompt-card .prompt-warning { color: #9a542f; font-weight: 700; line-height: 1.5; }
 .prompt-card textarea { min-height: 220px; font: .78rem/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .phase-note { color: #68736f; font-size: .84rem; line-height: 1.65; }
 .creative-activity { display: flex; align-items: center; gap: 20px; min-height: 150px; padding: 22px; border: 1px solid #b9d5c4; border-radius: 18px; background: linear-gradient(120deg, #f2faf5, #fffaf2, #f2faf5); background-size: 220% 220%; animation: activity-bg 5s ease infinite; overflow: hidden; }
@@ -823,6 +843,8 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 
 @media (max-width: 780px) {
   .creative-shot-grid, .prompt-grid { grid-template-columns: 1fr; }
+  .fidelity-card { grid-template-columns: 1fr; }
+  .fidelity-card > img { max-height: 280px; }
   .creative-activity { align-items: flex-start; gap: 14px; }
   .activity-orbit { flex-basis: 54px; width: 54px; height: 54px; }
   main { padding-top: 38px; }

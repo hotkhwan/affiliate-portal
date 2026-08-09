@@ -37,6 +37,7 @@ export interface ProductReference {
   contentType: string
   bytes: number
   sha256: string
+  downloadUrl?: string
 }
 
 export interface MissionDraft {

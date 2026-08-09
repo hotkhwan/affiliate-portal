@@ -198,6 +198,12 @@ Object.assign(en, {
   'Prompt Compiler กำลังเขียนคำสั่งสร้างวิดีโอสำหรับ Veo และ Seedance': 'Prompt Compiler is writing native Veo and Seedance generation commands',
   'Local Qwen · Creative Brain': 'Local Qwen · Creative Brain',
   'ยังอยู่หน้านี้ได้ ระบบกำลังคิดและตรวจงานจริง': 'You can stay on this page while the system plans and validates the work.',
+  'ภาพสินค้าต้นฉบับที่ต้องแนบไปกับ Prompt': 'Original product image that must accompany the prompt',
+  'Product Fidelity · สำคัญมาก': 'Product Fidelity · Critical',
+  'ต้องแนบภาพนี้ไปพร้อม Prompt ทุกครั้ง': 'Attach this exact image with the prompt every time',
+  'อย่าใช้ Prompt เพียงอย่างเดียว ให้เลือก Image-to-Video และใช้ภาพนี้เป็น first frame หรือ product reference': 'Do not use the prompt alone. Select Image-to-Video and use this image as the first frame or product reference.',
+  'ดาวน์โหลดภาพต้นฉบับ ↓': 'Download original image ↓',
+  '⚠ แนบภาพสินค้าต้นฉบับด้านบนพร้อม Prompt นี้': '⚠ Attach the original product image above together with this prompt',
 })
 
 Object.assign(zh, {
@@ -210,6 +216,12 @@ Object.assign(zh, {
   'Prompt Compiler กำลังเขียนคำสั่งสร้างวิดีโอสำหรับ Veo และ Seedance': '提示词编译器正在生成 Veo 和 Seedance 原生指令',
   'Local Qwen · Creative Brain': '本地 Qwen · 创意大脑',
   'ยังอยู่หน้านี้ได้ ระบบกำลังคิดและตรวจงานจริง': '可以留在此页面，系统正在真实策划并校验作品。',
+  'ภาพสินค้าต้นฉบับที่ต้องแนบไปกับ Prompt': '必须与提示词一起提交的原始商品图',
+  'Product Fidelity · สำคัญมาก': '商品保真度 · 关键',
+  'ต้องแนบภาพนี้ไปพร้อม Prompt ทุกครั้ง': '每次都必须将此原图与提示词一起提交',
+  'อย่าใช้ Prompt เพียงอย่างเดียว ให้เลือก Image-to-Video และใช้ภาพนี้เป็น first frame หรือ product reference': '不要只使用提示词。请选择图生视频，并将此图作为首帧或商品参考。',
+  'ดาวน์โหลดภาพต้นฉบับ ↓': '下载原始图片 ↓',
+  '⚠ แนบภาพสินค้าต้นฉบับด้านบนพร้อม Prompt นี้': '⚠ 请将上方原始商品图与此提示词一起提交',
 })
 
 const tables: Record<Exclude<Locale, 'th'>, Record<string, string>> = { en, zh }
