@@ -188,6 +188,30 @@ Object.assign(zh, {
   'นำ Prompt ไปใช้กับ Veo หรือ Seedance ได้ทันที การเชื่อม API สร้างวิดีโอจริงจะเป็นขั้นถัดไป': '现在可将提示词用于 Veo 或 Seedance。下一阶段将直接连接生成 API。',
 })
 
+Object.assign(en, {
+  'กำลังส่งข้อมูลไปยัง Local Qwen': 'Sending verified inputs to Local Qwen',
+  'Creative Director กำลังหา hook ที่น่าหยุดดู': 'Creative Director is finding a scroll-stopping hook',
+  'Story Director กำลังเรียงเรื่องให้จบใน 8 วินาที': 'Story Director is shaping the story into 8 seconds',
+  'Cinematography กำลังออกแบบกล้องและ 3 ช็อต': 'Cinematography is designing the camera and three shots',
+  'Lighting Director กำลังจัดแสงให้สินค้าเด่น': 'Lighting Director is shaping light around the product',
+  'Brand Guard กำลังตรวจข้อเท็จจริงและสิ่งที่ห้ามเพี้ยน': 'Brand Guard is checking verified facts and invariants',
+  'Prompt Compiler กำลังเขียนคำสั่งสร้างวิดีโอสำหรับ Veo และ Seedance': 'Prompt Compiler is writing native Veo and Seedance generation commands',
+  'Local Qwen · Creative Brain': 'Local Qwen · Creative Brain',
+  'ยังอยู่หน้านี้ได้ ระบบกำลังคิดและตรวจงานจริง': 'You can stay on this page while the system plans and validates the work.',
+})
+
+Object.assign(zh, {
+  'กำลังส่งข้อมูลไปยัง Local Qwen': '正在将已验证的信息发送到本地 Qwen',
+  'Creative Director กำลังหา hook ที่น่าหยุดดู': '创意总监正在设计让人停留的开场',
+  'Story Director กำลังเรียงเรื่องให้จบใน 8 วินาที': '故事总监正在将叙事压缩为 8 秒',
+  'Cinematography กำลังออกแบบกล้องและ 3 ช็อต': '摄影团队正在设计镜头和三个分镜',
+  'Lighting Director กำลังจัดแสงให้สินค้าเด่น': '灯光总监正在突出商品质感',
+  'Brand Guard กำลังตรวจข้อเท็จจริงและสิ่งที่ห้ามเพี้ยน': '品牌守护正在核对事实与不可变更项',
+  'Prompt Compiler กำลังเขียนคำสั่งสร้างวิดีโอสำหรับ Veo และ Seedance': '提示词编译器正在生成 Veo 和 Seedance 原生指令',
+  'Local Qwen · Creative Brain': '本地 Qwen · 创意大脑',
+  'ยังอยู่หน้านี้ได้ ระบบกำลังคิดและตรวจงานจริง': '可以留在此页面，系统正在真实策划并校验作品。',
+})
+
 const tables: Record<Exclude<Locale, 'th'>, Record<string, string>> = { en, zh }
 
 export function translate(locale: Locale, source: string, values: Record<string, string | number> = {}): string {

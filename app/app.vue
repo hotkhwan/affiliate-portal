@@ -28,6 +28,8 @@ const message = ref('')
 const error = ref('')
 const copied = ref(false)
 const copiedPrompt = ref('')
+const draftActivityIndex = ref(0)
+const draftElapsedSeconds = ref(0)
 const factsText = ref('')
 const platform = ref('tiktok')
 const postUrl = ref('')
@@ -41,6 +43,7 @@ const retryLabel = ref('')
 let retryAction: (() => Promise<void>) | null = null
 let visualQcPoller: VisualQcPoller | null = null
 let exportPoller: ExportPoller | null = null
+let draftActivityTimer: ReturnType<typeof setInterval> | null = null
 
 const localeStorageKey = 'kwanni.locale.v1'
 const tr = (source: string, values: Record<string, string | number> = {}) => translate(locale.value, source, values)
@@ -64,6 +67,16 @@ const canPost = computed(() => canPostMission(mission.value))
 const visualQcState = computed(() => visualQcDisplayState(mission.value?.visualQc))
 const visualQcIssues = computed(() => visualQcDefects(mission.value?.visualQc))
 const currentStep = computed(() => missionStep(mission.value))
+const draftActivities = computed(() => [
+  tr('กำลังส่งข้อมูลไปยัง Local Qwen'),
+  tr('Creative Director กำลังหา hook ที่น่าหยุดดู'),
+  tr('Story Director กำลังเรียงเรื่องให้จบใน 8 วินาที'),
+  tr('Cinematography กำลังออกแบบกล้องและ 3 ช็อต'),
+  tr('Lighting Director กำลังจัดแสงให้สินค้าเด่น'),
+  tr('Brand Guard กำลังตรวจข้อเท็จจริงและสิ่งที่ห้ามเพี้ยน'),
+  tr('Prompt Compiler กำลังเขียนคำสั่งสร้างวิดีโอสำหรับ Veo และ Seedance'),
+])
+const currentDraftActivity = computed(() => draftActivities.value[Math.min(draftActivityIndex.value, draftActivities.value.length - 1)])
 
 function setMission(next: Mission) {
   mission.value = next
@@ -284,6 +297,18 @@ watch(exportProcessing, (pending) => {
   else exportPoller?.stop()
 })
 
+watch(busy, (state) => {
+  if (draftActivityTimer) clearInterval(draftActivityTimer)
+  draftActivityTimer = null
+  if (state !== 'draft') return
+  draftActivityIndex.value = 0
+  draftElapsedSeconds.value = 0
+  draftActivityTimer = setInterval(() => {
+    draftElapsedSeconds.value += 1
+    if (draftElapsedSeconds.value % 5 === 0 && draftActivityIndex.value < draftActivities.value.length - 1) draftActivityIndex.value += 1
+  }, 1000)
+})
+
 onMounted(async () => {
   const savedLocale = localStorage.getItem(localeStorageKey)
   setLocale(savedLocale === 'th' || savedLocale === 'zh' || savedLocale === 'en' ? savedLocale : detectLocale(navigator.languages))
@@ -317,6 +342,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   visualQcPoller?.stop()
   exportPoller?.stop()
+  if (draftActivityTimer) clearInterval(draftActivityTimer)
 })
 </script>
 
@@ -440,7 +466,18 @@ onBeforeUnmount(() => {
             <p class="section-label">{{ tr('ทีม Creative พร้อมทำงาน') }}</p>
             <h2>{{ tr('ให้ทีมงานขั้นเทพวางแผนวิดีโอ') }}</h2>
             <p class="section-copy">{{ tr('Creative Director, Story Director, Cinematography, Lighting และ Brand Guard ใช้ Qwen ตัวเดียวกัน เพื่อสร้างแผน 3 ช็อตโดยยึดภาพสินค้าเป็นหลัก') }}</p>
-            <button class="primary" type="button" :disabled="Boolean(busy)" @click="generateDraft">
+            <div v-if="busy === 'draft'" class="creative-activity" role="status" aria-live="polite">
+              <div class="activity-orbit" aria-hidden="true"><span>K</span></div>
+              <div class="activity-copy">
+                <small>{{ tr('Local Qwen · Creative Brain') }} · {{ draftElapsedSeconds }}s</small>
+                <strong :key="draftActivityIndex" class="activity-line">{{ currentDraftActivity }}<span class="thinking-dots" aria-hidden="true" /></strong>
+                <div class="activity-roles" aria-hidden="true">
+                  <span v-for="(activity, index) in draftActivities" :key="activity" :class="{ done: index < draftActivityIndex, active: index === draftActivityIndex }" />
+                </div>
+                <p>{{ tr('ยังอยู่หน้านี้ได้ ระบบกำลังคิดและตรวจงานจริง') }}</p>
+              </div>
+            </div>
+            <button v-else class="primary" type="button" :disabled="Boolean(busy)" @click="generateDraft">
               <span v-if="busy === 'draft'" class="spinner" />
               {{ busy === 'draft' ? tr('ทีม Creative กำลังวางแผน…') : tr('สร้างแผนและ Prompt →') }}
               <span aria-hidden="true">→</span>
@@ -718,6 +755,26 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .prompt-card small { color: #718079; }
 .prompt-card textarea { min-height: 220px; font: .78rem/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .phase-note { color: #68736f; font-size: .84rem; line-height: 1.65; }
+.creative-activity { display: flex; align-items: center; gap: 20px; min-height: 150px; padding: 22px; border: 1px solid #b9d5c4; border-radius: 18px; background: linear-gradient(120deg, #f2faf5, #fffaf2, #f2faf5); background-size: 220% 220%; animation: activity-bg 5s ease infinite; overflow: hidden; }
+.activity-orbit { position: relative; display: grid; place-items: center; flex: 0 0 72px; width: 72px; height: 72px; border: 1px solid #9fc9b0; border-radius: 50%; }
+.activity-orbit::before, .activity-orbit::after { content: ''; position: absolute; border: 2px solid transparent; border-top-color: #1f6b4f; border-radius: 50%; animation: orbit 1.8s linear infinite; }
+.activity-orbit::before { inset: -8px; }
+.activity-orbit::after { inset: 8px; border-top-color: #e79757; animation-direction: reverse; animation-duration: 1.2s; }
+.activity-orbit span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px 12px 12px 3px; color: white; background: #1f6b4f; font-weight: 800; }
+.activity-copy { display: grid; gap: 9px; min-width: 0; }
+.activity-copy small { color: #6a7b73; font-weight: 700; }
+.activity-copy strong { color: #173f32; line-height: 1.5; }
+.activity-copy p { margin: 0; color: #68736f; font-size: .78rem; }
+.activity-line { animation: activity-enter .55s ease both; }
+.thinking-dots::after { content: ''; display: inline-block; width: 1.4em; animation: thinking 1.2s steps(4, end) infinite; }
+.activity-roles { display: grid; grid-template-columns: repeat(7, minmax(12px, 1fr)); gap: 5px; max-width: 420px; }
+.activity-roles span { height: 4px; border-radius: 999px; background: #d7dfda; transition: background .3s, transform .3s; }
+.activity-roles span.done { background: #7db494; }
+.activity-roles span.active { background: #1f6b4f; transform: scaleY(1.7); }
+@keyframes activity-bg { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes activity-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes thinking { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75%,100% { content: '...'; } }
 .action-row { display: flex; justify-content: flex-end; gap: 12px; }
 .post-actions { margin: 14px 0; }
 .download-link { display: flex; justify-content: center; align-items: center; min-height: 52px; margin: 14px 0; border-radius: 13px; color: white; background: #1f6b4f; font-weight: 700; text-decoration: none; }
@@ -766,6 +823,8 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 
 @media (max-width: 780px) {
   .creative-shot-grid, .prompt-grid { grid-template-columns: 1fr; }
+  .creative-activity { align-items: flex-start; gap: 14px; }
+  .activity-orbit { flex-basis: 54px; width: 54px; height: 54px; }
   main { padding-top: 38px; }
   .hero { margin-bottom: 30px; }
   .workspace { grid-template-columns: 1fr; }
