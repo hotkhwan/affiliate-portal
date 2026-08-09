@@ -17,11 +17,11 @@ describe('MissionProgress', () => {
     expect(wrapper.attributes('aria-label')).toBe('ความคืบหน้าภารกิจ')
     expect(wrapper.text()).toContain('1/5')
     expect(wrapper.find('li.current').text()).toContain('ถ่ายครบ 3 ช็อต')
-    expect(wrapper.find('button').exists()).toBe(false)
+    expect(wrapper.find('button').exists()).toBe(true)
   })
 
-  it('emits reset only after the first post exists', async () => {
-    const wrapper = mount(MissionProgress, { props: { items, posted: true } })
+  it('lets a user abandon an active or legacy mission and start again', async () => {
+    const wrapper = mount(MissionProgress, { props: { items, posted: false } })
     await wrapper.get('button').trigger('click')
     expect(wrapper.emitted('reset')).toHaveLength(1)
   })

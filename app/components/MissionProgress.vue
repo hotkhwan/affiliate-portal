@@ -30,7 +30,7 @@ defineEmits<{
         <span>{{ item.label }}</span>
       </li>
     </ol>
-    <button v-if="posted" class="text-button" type="button" @click="$emit('reset')">
+    <button v-if="items[0]?.complete" class="text-button" type="button" @click="$emit('reset')">
       {{ resetLabel }}
     </button>
   </aside>
