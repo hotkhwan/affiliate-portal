@@ -97,15 +97,15 @@ describe('mission API client', () => {
     }))
   })
 
-  it('queues provider generation without exposing provider credentials', async () => {
+  it('queues the local Wan preview without exposing runtime credentials', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify(mission), { status: 202 }))
     const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch)
 
-    await api.generateVideo('mission-1', 'veo')
+    await api.generateVideo('mission-1', 'wan')
     expect(fetcher).toHaveBeenCalledWith('/v1/missions/mission-1/generate-video', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ provider: 'veo' }),
-      headers: expect.not.objectContaining({ VEO_API_KEY: expect.anything() }),
+      body: JSON.stringify({ provider: 'wan' }),
+      headers: expect.not.objectContaining({ WAN_API_KEY: expect.anything() }),
     }))
   })
 })

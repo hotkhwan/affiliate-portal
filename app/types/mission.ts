@@ -129,12 +129,16 @@ export interface GeneratedShot {
 }
 
 export interface VideoGeneration {
-  provider: 'veo' | 'seedance'
+  provider: 'wan' | 'veo' | 'seedance'
+  mode?: 'localPreview' | 'cloudFinal'
   state: GenerationState
   job?: ProcessingJob
   shots: GeneratedShot[]
   outputKey?: string
   warning?: string
+  queuedAt?: string
+  estimatedReadyAt?: string
+  estimateSeconds?: number
   updatedAt: string
 }
 

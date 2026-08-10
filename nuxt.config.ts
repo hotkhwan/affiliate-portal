@@ -30,6 +30,7 @@ export default defineNuxtConfig({
       missionApiBase: process.env.NUXT_PUBLIC_MISSION_API_BASE || '/dev/llm-api/v1',
       missionRequestTimeoutMs: positiveMilliseconds(process.env.NUXT_PUBLIC_MISSION_REQUEST_TIMEOUT_MS, 30_000),
       missionLongRequestTimeoutMs: positiveMilliseconds(process.env.NUXT_PUBLIC_MISSION_LONG_REQUEST_TIMEOUT_MS, 120_000),
+      localVideoEnabled: process.env.NUXT_PUBLIC_LOCAL_VIDEO_ENABLED === 'true',
     },
   },
   typescript: {

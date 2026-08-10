@@ -28,9 +28,11 @@ const message = ref('')
 const error = ref('')
 const copied = ref(false)
 const copiedPrompt = ref('')
-const selectedProvider = ref<'veo' | 'seedance'>('veo')
+const selectedProvider = ref<'wan' | 'veo' | 'seedance'>('wan')
+const localVideoEnabled = String(config.public.localVideoEnabled).toLowerCase() === 'true'
 const draftActivityIndex = ref(0)
 const draftElapsedSeconds = ref(0)
+const generationActivityIndex = ref(0)
 const factsText = ref('')
 const platform = ref('tiktok')
 const postUrl = ref('')
@@ -45,6 +47,7 @@ let retryAction: (() => Promise<void>) | null = null
 let visualQcPoller: VisualQcPoller | null = null
 let exportPoller: ExportPoller | null = null
 let draftActivityTimer: ReturnType<typeof setInterval> | null = null
+let generationActivityTimer: ReturnType<typeof setInterval> | null = null
 
 const localeStorageKey = 'kwanni.locale.v1'
 const tr = (source: string, values: Record<string, string | number> = {}) => translate(locale.value, source, values)
@@ -80,6 +83,14 @@ const draftActivities = computed(() => [
   tr('Prompt Compiler กำลังเขียนคำสั่งสร้างวิดีโอสำหรับ Veo และ Seedance'),
 ])
 const currentDraftActivity = computed(() => draftActivities.value[Math.min(draftActivityIndex.value, draftActivities.value.length - 1)])
+const generationActivities = computed(() => [
+  tr('กำลังอ่านภาพสินค้าและล็อกรายละเอียดสำคัญ'),
+  tr('กำลังสร้างการเคลื่อนไหวช่วงเปิดเรื่อง'),
+  tr('กำลังเชื่อม 3 จังหวะของเรื่องให้ต่อเนื่อง'),
+  tr('กำลังรักษาสี รูปทรง ฉลาก และโลโก้'),
+  tr('กำลังเรนเดอร์เฟรมสุดท้ายและเข้ารหัส MP4'),
+])
+const currentGenerationActivity = computed(() => generationActivities.value[generationActivityIndex.value % generationActivities.value.length])
 
 function setMission(next: Mission) {
   mission.value = next
@@ -158,8 +169,18 @@ async function prepareExport() {
 
 async function generateVideo() {
   if (!mission.value) return
-  await run('generate-video', () => api.generateVideo(mission.value!.id, selectedProvider.value), 'เริ่มสร้างวิดีโอจริงแล้ว ระบบจะตรวจและซ่อมทีละช็อต', 'ลองสร้างวิดีโออีกครั้ง')
+  if (!localVideoEnabled) {
+    error.value = tr('Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม')
+    return
+  }
+  await run('generate-video', () => api.generateVideo(mission.value!.id, selectedProvider.value), 'Local Preview เข้าคิวแล้ว ปิดหน้านี้และกลับมาดาวน์โหลดภายหลังได้', 'ลองสร้างวิดีโออีกครั้ง')
   exportPoller?.start()
+}
+
+function estimatedReadyLabel(): string {
+  const value = mission.value?.videoGeneration?.estimatedReadyAt
+  if (!value) return tr('ประมาณ 20–40 นาที')
+  return new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : locale.value === 'en' ? 'en' : 'th-TH', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
 function generationStateLabel(state: string): string {
@@ -316,8 +337,17 @@ watch(exportProcessing, (pending) => {
   else exportPoller?.stop()
 })
 
+watch(videoGenerating, (pending) => {
+  if (generationActivityTimer) clearInterval(generationActivityTimer)
+  generationActivityTimer = null
+  if (!pending) return
+  generationActivityIndex.value = 0
+  generationActivityTimer = setInterval(() => { generationActivityIndex.value += 1 }, 5000)
+}, { immediate: true })
+
 watch(busy, (state) => {
   if (draftActivityTimer) clearInterval(draftActivityTimer)
+  if (generationActivityTimer) clearInterval(generationActivityTimer)
   draftActivityTimer = null
   if (state !== 'draft') return
   draftActivityIndex.value = 0
@@ -538,18 +568,22 @@ onBeforeUnmount(() => {
             </div>
             <section class="provider-generation" aria-labelledby="provider-generation-title">
               <p class="section-label">{{ tr('First Post · สร้างวิดีโอจริง') }}</p>
-              <h3 id="provider-generation-title">{{ tr('เลือกทีม Render') }}</h3>
-              <p>{{ tr('KWANNI จะส่งภาพต้นฉบับไปทุกช็อต ตรวจ Product Fidelity ด้วย VLM + OCR ตรวจคุณภาพภาพยนตร์ด้วย ShotVL และให้ Qwen ซ่อมเฉพาะช็อตที่ไม่ผ่าน') }}</p>
+              <h3 id="provider-generation-title">{{ tr('สร้าง Local Preview บน DGX') }}</h3>
+              <p>{{ tr('Wan จะใช้ภาพสินค้าต้นฉบับสร้างคลิปแนวตั้ง 5 วินาที โดยบีบแผน 3 ช็อตเป็น 3 จังหวะสำคัญ ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้') }}</p>
               <div class="provider-choice">
-                <label :class="{ selected: selectedProvider === 'veo' }"><input v-model="selectedProvider" type="radio" value="veo" :disabled="videoGenerating"><strong>Veo 3.1</strong><span>Reference Image · 8s</span></label>
-                <label :class="{ selected: selectedProvider === 'seedance' }"><input v-model="selectedProvider" type="radio" value="seedance" :disabled="videoGenerating"><strong>Seedance</strong><span>Reference Image · 9:16</span></label>
+                <label :class="{ selected: localVideoEnabled, disabled: !localVideoEnabled }"><input v-model="selectedProvider" type="radio" value="wan" :disabled="videoGenerating || !localVideoEnabled"><strong>Wan2.2 Local Preview</strong><span>5 วินาที · 704 × 1280 · ไม่มีค่า API</span></label>
               </div>
-              <button v-if="!videoGenerating" class="primary full" type="button" :disabled="Boolean(busy)" @click="generateVideo">
+              <p v-if="!localVideoEnabled" class="prompt-warning">{{ tr('Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม') }}</p>
+              <button v-if="!videoGenerating" class="primary full" type="button" :disabled="Boolean(busy) || !localVideoEnabled" @click="generateVideo">
                 <span v-if="busy === 'generate-video'" class="spinner" />
-                {{ busy === 'generate-video' ? tr('กำลังเข้าคิว…') : tr('สร้างและตรวจวิดีโออัตโนมัติ →') }}
+                {{ busy === 'generate-video' ? tr('กำลังเข้าคิว…') : tr('สร้าง Local Preview →') }}
               </button>
               <div v-if="mission.videoGeneration" class="generation-progress" role="status" aria-live="polite">
-                <div class="generation-heading"><strong>{{ mission.videoGeneration.provider === 'veo' ? 'Veo 3.1' : 'Seedance' }}</strong><span>{{ generationStateLabel(mission.videoGeneration.state) }}</span></div>
+                <div class="generation-heading"><strong>{{ mission.videoGeneration.provider === 'wan' ? 'Wan2.2 Local' : mission.videoGeneration.provider === 'veo' ? 'Veo 3.1' : 'Seedance' }}</strong><span>{{ generationStateLabel(mission.videoGeneration.state) }}</span></div>
+                <div v-if="mission.videoGeneration.provider === 'wan' && videoGenerating" class="local-preview-activity">
+                  <span class="spinner" />
+                  <div><strong>{{ currentGenerationActivity }}</strong><p>{{ tr('เวลาประมาณการ') }}: {{ estimatedReadyLabel() }} · {{ tr('กลับมาหน้านี้ภายหลังได้ งานไม่หาย') }}</p></div>
+                </div>
                 <article v-for="(shot, index) in mission.videoGeneration.shots" :key="shot.shotId" class="generation-shot" :class="`generation-${shot.state}`">
                   <div><strong>{{ tr('Shot {n}', { n: index + 1 }) }}</strong><span>revision {{ shot.revision }} · {{ generationStateLabel(shot.state) }}</span></div>
                   <div v-if="shot.fidelity || shot.cinematic" class="generation-scores">
@@ -571,7 +605,7 @@ onBeforeUnmount(() => {
             <h2 v-if="!mission.posted">{{ tr('พร้อมลองตลาดแล้ว') }}</h2>
             <h2 v-else>{{ tr('โพสต์แรกสำเร็จแล้ว 🎉') }}</h2>
 
-            <section v-if="canPost && mission.videoGeneration" class="visual-qc qc-passed" aria-labelledby="generation-qc-title">
+            <section v-if="canPost && mission.videoGeneration && mission.videoGeneration.provider !== 'wan'" class="visual-qc qc-passed" aria-labelledby="generation-qc-title">
               <div class="visual-qc-heading"><div><span>{{ tr('Product Fidelity + Cinematic QC') }}</span><strong id="generation-qc-title">{{ tr('ผ่านครบก่อนรวมวิดีโอ') }}</strong></div><span class="qc-score">✓</span></div>
               <p>{{ tr('ภาพต้นฉบับถูกส่งทุกช็อต และทุกช็อตผ่าน VLM + OCR กับ ShotVL แล้ว') }}</p>
               <div class="generation-progress">
@@ -885,6 +919,8 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .provider-choice label { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 16px; border: 1px solid #cad8d0; border-radius: 14px; background: white; cursor: pointer; }
 .provider-choice label.selected { border-color: #1f6b4f; box-shadow: 0 0 0 2px #1f6b4f22; }
 .provider-choice label span { grid-column: 2; color: #607068; font-size: .78rem; }
+.local-preview-activity { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0; padding: 14px; border-radius: 14px; background: #edf7f1; }
+.local-preview-activity p { margin: 4px 0 0; color: #52635a; }
 .generation-progress { display: grid; gap: 10px; margin-top: 18px; }
 .generation-heading, .generation-shot > div { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
 .generation-heading { padding: 12px 14px; border-radius: 12px; background: #173f32; color: white; }

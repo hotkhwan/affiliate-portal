@@ -1,6 +1,6 @@
 # KWANNI Portal
 
-KWANNI is a guided affiliate starter for beginners. This repository contains the Nuxt client for the Mission Zero First Post loop: enter verified product facts, attach one exact product image, let Qwen create a three-shot CPS, choose Veo or Seedance, watch per-shot Product Fidelity VLM/OCR and ShotVL gates, download the verified MP4, post manually, and record the outcome.
+KWANNI is a guided affiliate starter for beginners. This repository contains the Nuxt client for the Mission Zero First Post loop: enter verified product facts, attach one exact product image, let Qwen create a three-shot CPS, queue one free five-second Wan2.2 preview on the local DGX, leave and return at the displayed ETA, review advisory ShotVL feedback, download the MP4, post manually, and record the outcome. Paid Veo/Seedance generation is not exposed by the Alpha UI.
 
 The Alpha intentionally does not include trend aggregation, automatic publishing, credits, a marketplace, or income promises. See [Mission Zero Alpha](docs/mission-zero-alpha.md) for the product and integration boundary.
 

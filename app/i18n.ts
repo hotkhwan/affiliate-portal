@@ -130,6 +130,7 @@ const en: Record<string, string> = {
 }
 
 Object.assign(en, {
+  'Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม': 'Local Preview is available only during supervised test windows until login and quotas are ready.',
   'KWANNI Creative Brain': 'KWANNI Creative Brain',
   'ภาพสินค้า 1 ภาพ': 'One product image',
   'สู่แผนวิดีโอระดับมืออาชีพ': 'to a professional video plan',
@@ -179,6 +180,7 @@ const zh: Record<string, string> = {
 }
 
 Object.assign(zh, {
+  'Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม': '在登录与配额上线前，本地预览仅在有人监督的测试窗口开放。',
   'KWANNI Creative Brain': 'KWANNI 创意大脑', 'ภาพสินค้า 1 ภาพ': '一张商品图', 'สู่แผนวิดีโอระดับมืออาชีพ': '生成专业视频方案',
   'บอกข้อเท็จจริงของสินค้า เพิ่มภาพอ้างอิงเพียง 1 ภาพ แล้วทีม Creative จะสร้างแผน 3 ช็อตและ Prompt สำหรับ Veo / Seedance': '提供经核实的商品信息和一张参考图，创意团队将生成三镜头方案以及 Veo / Seedance 提示词。',
   'เพิ่มภาพสินค้า 1 ภาพ': '添加一张商品图', 'ทีม Creative วางแผน': '创意团队策划', 'Prompt Veo / Seedance พร้อมใช้': 'Veo / Seedance 提示词已就绪',
@@ -186,6 +188,38 @@ Object.assign(zh, {
   'JPG, PNG หรือ WebP · ไม่เกิน 8 MB': 'JPG、PNG 或 WebP · 最大 8 MB', 'ทีม Creative พร้อมทำงาน': '创意团队已就绪', 'ให้ทีมงานขั้นเทพวางแผนวิดีโอ': '让专业团队为你策划视频',
   'ทีม Creative กำลังวางแผน…': '创意团队正在策划…', 'สร้างแผนและ Prompt →': '生成方案和提示词 →', 'Canonical Production Spec': '标准化制作规格', 'แผน 3 ช็อตและ Prompt พร้อมแล้ว': '三镜头方案和提示词已就绪', 'คัดลอก Prompt': '复制提示词',
   'นำ Prompt ไปใช้กับ Veo หรือ Seedance ได้ทันที การเชื่อม API สร้างวิดีโอจริงจะเป็นขั้นถัดไป': '现在可将提示词用于 Veo 或 Seedance。下一阶段将直接连接生成 API。',
+})
+
+Object.assign(en, {
+  'สร้าง Local Preview บน DGX': 'Create a local preview on DGX',
+  'Wan จะใช้ภาพสินค้าต้นฉบับสร้างคลิปแนวตั้ง 5 วินาที โดยบีบแผน 3 ช็อตเป็น 3 จังหวะสำคัญ ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้': 'Wan uses the original product image to create one 5-second portrait preview, compressing the three-shot plan into three key beats. There is no API fee, and you may return later for the file.',
+  'สร้าง Local Preview →': 'Create local preview →',
+  'Local Preview เข้าคิวแล้ว ปิดหน้านี้และกลับมาดาวน์โหลดภายหลังได้': 'The local preview is queued. You may close this page and return later to download it.',
+  'DGX กำลังสร้างภาพเคลื่อนไหวทีละเฟรม': 'DGX is generating the animation frame by frame',
+  'กำลังอ่านภาพสินค้าและล็อกรายละเอียดสำคัญ': 'Reading the product image and locking critical details',
+  'กำลังสร้างการเคลื่อนไหวช่วงเปิดเรื่อง': 'Generating the opening movement',
+  'กำลังเชื่อม 3 จังหวะของเรื่องให้ต่อเนื่อง': 'Connecting the three story beats smoothly',
+  'กำลังรักษาสี รูปทรง ฉลาก และโลโก้': 'Preserving color, shape, label and logo',
+  'กำลังเรนเดอร์เฟรมสุดท้ายและเข้ารหัส MP4': 'Rendering final frames and encoding the MP4',
+  'เวลาประมาณการ': 'Estimated ready time',
+  'ประมาณ 20–40 นาที': 'About 20–40 minutes',
+  'กลับมาหน้านี้ภายหลังได้ งานไม่หาย': 'You can return later; the job is safely persisted.',
+})
+
+Object.assign(zh, {
+  'สร้าง Local Preview บน DGX': '在 DGX 上生成本地预览',
+  'Wan จะใช้ภาพสินค้าต้นฉบับสร้างคลิปแนวตั้ง 5 วินาที โดยบีบแผน 3 ช็อตเป็น 3 จังหวะสำคัญ ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้': 'Wan 使用原始商品图生成一个 5 秒竖屏预览，将三镜头方案压缩为三个关键节奏。无需 API 费用，可关闭页面后稍后回来取文件。',
+  'สร้าง Local Preview →': '生成本地预览 →',
+  'Local Preview เข้าคิวแล้ว ปิดหน้านี้และกลับมาดาวน์โหลดภายหลังได้': '本地预览已排队，可关闭页面并稍后回来下载。',
+  'DGX กำลังสร้างภาพเคลื่อนไหวทีละเฟรม': 'DGX 正在逐帧生成动画',
+  'กำลังอ่านภาพสินค้าและล็อกรายละเอียดสำคัญ': '正在读取商品图并锁定关键细节',
+  'กำลังสร้างการเคลื่อนไหวช่วงเปิดเรื่อง': '正在生成开场动作',
+  'กำลังเชื่อม 3 จังหวะของเรื่องให้ต่อเนื่อง': '正在连贯衔接三个故事节奏',
+  'กำลังรักษาสี รูปทรง ฉลาก และโลโก้': '正在保持颜色、形状、标签和标志',
+  'กำลังเรนเดอร์เฟรมสุดท้ายและเข้ารหัส MP4': '正在渲染最后画面并编码 MP4',
+  'เวลาประมาณการ': '预计完成时间',
+  'ประมาณ 20–40 นาที': '约 20–40 分钟',
+  'กลับมาหน้านี้ภายหลังได้ งานไม่หาย': '可稍后返回，任务不会丢失。',
 })
 
 Object.assign(en, {
