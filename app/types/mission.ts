@@ -4,6 +4,7 @@ export type MissionState
     | 'assetsUploaded'
     | 'draftGenerating'
     | 'draftReady'
+    | 'videoGenerating'
     | 'exportQueued'
     | 'exported'
     | 'posted'
@@ -102,6 +103,41 @@ export interface ProcessingJob {
   updatedAt: string
 }
 
+export type GenerationState = 'queued' | 'rendering' | 'verifying' | 'revising' | 'assembling' | 'succeeded' | 'failed'
+
+export interface ProductFidelityReport {
+  modelRevision: string
+  score: number
+  threshold: number
+  passed: boolean
+  metrics: Record<string, number>
+  referenceText?: string[]
+  observedText?: string[]
+  defects?: VisualQCDefect[]
+}
+
+export interface GeneratedShot {
+  shotId: string
+  revision: number
+  state: GenerationState
+  storageKey?: string
+  providerTask?: string
+  fidelity?: ProductFidelityReport
+  cinematic?: VisualQCReport
+  defects?: VisualQCDefect[]
+  updatedAt: string
+}
+
+export interface VideoGeneration {
+  provider: 'veo' | 'seedance'
+  state: GenerationState
+  job?: ProcessingJob
+  shots: GeneratedShot[]
+  outputKey?: string
+  warning?: string
+  updatedAt: string
+}
+
 export interface MissionOutcome {
   views: number
   clicks: number
@@ -188,6 +224,7 @@ export interface Mission {
   outcome?: MissionOutcome
   nextAction?: NextAction
   visualQc?: VisualQCState
+  videoGeneration?: VideoGeneration
   version: number
   createdAt: string
   updatedAt: string

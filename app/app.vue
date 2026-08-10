@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { canPostMission, captionText, missionProgress, missionStep, parseFacts, shouldRefreshExport, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
+import { canPostMission, captionText, missionProgress, missionStep, parseFacts, validateProduct, validateProductReferenceMedia } from './lib/mission-flow'
 import { createMissionApi, MissionApiError, PRIVACY_NOTICE_VERSION } from './services/mission-api'
 import { createMissionSession } from './stores/mission-session'
 import { createVisualQcPoller, visualQcDefects, visualQcDisplayState, visualQcScore } from './lib/visual-qc'
@@ -28,6 +28,7 @@ const message = ref('')
 const error = ref('')
 const copied = ref(false)
 const copiedPrompt = ref('')
+const selectedProvider = ref<'veo' | 'seedance'>('veo')
 const draftActivityIndex = ref(0)
 const draftElapsedSeconds = ref(0)
 const factsText = ref('')
@@ -62,8 +63,9 @@ function changeLocale(event: Event) {
 const progress = computed(() => missionProgress(mission.value).map(item => ({ ...item, label: tr(item.label) })))
 const hasProductReference = computed(() => Boolean(mission.value?.productReferences?.length))
 const productReference = computed(() => mission.value?.productReferences?.[0])
-const exportProcessing = computed(() => mission.value?.state === 'exportQueued' || mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
-const exportFailed = computed(() => mission.value?.exportJob?.state === 'failed')
+const exportProcessing = computed(() => mission.value?.state === 'videoGenerating' || mission.value?.state === 'exportQueued' || mission.value?.exportJob?.state === 'queued' || mission.value?.exportJob?.state === 'running')
+const exportFailed = computed(() => mission.value?.videoGeneration?.state === 'failed' || mission.value?.exportJob?.state === 'failed')
+const videoGenerating = computed(() => mission.value?.state === 'videoGenerating')
 const canPost = computed(() => canPostMission(mission.value))
 const visualQcState = computed(() => visualQcDisplayState(mission.value?.visualQc))
 const visualQcIssues = computed(() => visualQcDefects(mission.value?.visualQc))
@@ -81,6 +83,7 @@ const currentDraftActivity = computed(() => draftActivities.value[Math.min(draft
 
 function setMission(next: Mission) {
   mission.value = next
+  if (next.videoGeneration?.provider) selectedProvider.value = next.videoGeneration.provider
   session?.saveMission(next)
 }
 
@@ -153,11 +156,26 @@ async function prepareExport() {
   await run('export', () => api.exportDraft(mission.value!.id), 'เตรียมงานส่งออกแนวตั้งพร้อมสำหรับขั้นตอนโพสต์แล้ว', 'ลองเตรียมงานส่งออกอีกครั้ง')
 }
 
+async function generateVideo() {
+  if (!mission.value) return
+  await run('generate-video', () => api.generateVideo(mission.value!.id, selectedProvider.value), 'เริ่มสร้างวิดีโอจริงแล้ว ระบบจะตรวจและซ่อมทีละช็อต', 'ลองสร้างวิดีโออีกครั้ง')
+  exportPoller?.start()
+}
+
+function generationStateLabel(state: string): string {
+  const labels: Record<string, string> = {
+    queued: 'รอคิวสร้างวิดีโอ', rendering: 'กำลังสร้างช็อต', verifying: 'กำลังตรวจสินค้าและภาพยนตร์', revising: 'Qwen กำลังแก้ช็อตนี้', assembling: 'กำลังรวมวิดีโอ', succeeded: 'ผ่าน', failed: 'ไม่ผ่าน',
+  }
+  return tr(labels[state] || state)
+}
+
+function percent(value?: number): string {
+  return `${Math.round((value ?? 0) * 100)}%`
+}
+
 async function refreshMission() {
   if (!mission.value) return
-  const refresh = shouldRefreshExport(mission.value)
-    ? () => api.exportDraft(mission.value!.id)
-    : () => api.get(mission.value!.id)
+  const refresh = () => api.get(mission.value!.id)
   await run('refresh', refresh, 'อัปเดตสถานะล่าสุดแล้ว', 'ลองตรวจสถานะอีกครั้ง')
 }
 
@@ -266,7 +284,7 @@ async function restoreMission() {
   busy.value = 'restore'
   error.value = ''
   try {
-    mission.value = await api.get(id)
+    setMission(await api.get(id))
   }
   catch (cause) {
     if (cause instanceof MissionApiError && cause.status === 404) {
@@ -518,8 +536,33 @@ onBeforeUnmount(() => {
                 <button class="secondary" type="button" @click="copyProviderPrompt(provider)">{{ copiedPrompt === provider ? tr('✓ คัดลอกแล้ว') : tr('คัดลอก Prompt') }}</button>
               </article>
             </div>
-            <p class="phase-note">{{ tr('นำ Prompt ไปใช้กับ Veo หรือ Seedance ได้ทันที การเชื่อม API สร้างวิดีโอจริงจะเป็นขั้นถัดไป') }}</p>
-            <button class="text-button" type="button" @click="resetMission">{{ tr('เริ่มภารกิจถัดไป →') }}</button>
+            <section class="provider-generation" aria-labelledby="provider-generation-title">
+              <p class="section-label">{{ tr('First Post · สร้างวิดีโอจริง') }}</p>
+              <h3 id="provider-generation-title">{{ tr('เลือกทีม Render') }}</h3>
+              <p>{{ tr('KWANNI จะส่งภาพต้นฉบับไปทุกช็อต ตรวจ Product Fidelity ด้วย VLM + OCR ตรวจคุณภาพภาพยนตร์ด้วย ShotVL และให้ Qwen ซ่อมเฉพาะช็อตที่ไม่ผ่าน') }}</p>
+              <div class="provider-choice">
+                <label :class="{ selected: selectedProvider === 'veo' }"><input v-model="selectedProvider" type="radio" value="veo" :disabled="videoGenerating"><strong>Veo 3.1</strong><span>Reference Image · 8s</span></label>
+                <label :class="{ selected: selectedProvider === 'seedance' }"><input v-model="selectedProvider" type="radio" value="seedance" :disabled="videoGenerating"><strong>Seedance</strong><span>Reference Image · 9:16</span></label>
+              </div>
+              <button v-if="!videoGenerating" class="primary full" type="button" :disabled="Boolean(busy)" @click="generateVideo">
+                <span v-if="busy === 'generate-video'" class="spinner" />
+                {{ busy === 'generate-video' ? tr('กำลังเข้าคิว…') : tr('สร้างและตรวจวิดีโออัตโนมัติ →') }}
+              </button>
+              <div v-if="mission.videoGeneration" class="generation-progress" role="status" aria-live="polite">
+                <div class="generation-heading"><strong>{{ mission.videoGeneration.provider === 'veo' ? 'Veo 3.1' : 'Seedance' }}</strong><span>{{ generationStateLabel(mission.videoGeneration.state) }}</span></div>
+                <article v-for="(shot, index) in mission.videoGeneration.shots" :key="shot.shotId" class="generation-shot" :class="`generation-${shot.state}`">
+                  <div><strong>{{ tr('Shot {n}', { n: index + 1 }) }}</strong><span>revision {{ shot.revision }} · {{ generationStateLabel(shot.state) }}</span></div>
+                  <div v-if="shot.fidelity || shot.cinematic" class="generation-scores">
+                    <span v-if="shot.fidelity">Product {{ percent(shot.fidelity.score) }} {{ shot.fidelity.passed ? '✓' : '!' }}</span>
+                    <span v-if="shot.cinematic">Cinematic {{ percent(shot.cinematic.score) }} {{ shot.cinematic.passed ? '✓' : '!' }}</span>
+                  </div>
+                  <ul v-if="shot.defects?.length"><li v-for="defect in shot.defects" :key="defect.code">{{ defect.message }}</li></ul>
+                </article>
+                <p v-if="mission.videoGeneration.warning" class="prompt-warning">{{ mission.videoGeneration.warning }}</p>
+                <button v-if="mission.videoGeneration.state === 'failed'" class="secondary" type="button" :disabled="Boolean(busy)" @click="generateVideo">{{ tr('ลองสร้างเฉพาะงานที่ค้างอีกครั้ง') }}</button>
+                <small v-else-if="videoGenerating">{{ tr('ปิดหน้านี้ได้ งานอยู่ใน Mongo และทำต่อหลังระบบ restart') }}</small>
+              </div>
+            </section>
           </template>
 
           <template v-else-if="currentStep === 'post' && mission">
@@ -528,7 +571,18 @@ onBeforeUnmount(() => {
             <h2 v-if="!mission.posted">{{ tr('พร้อมลองตลาดแล้ว') }}</h2>
             <h2 v-else>{{ tr('โพสต์แรกสำเร็จแล้ว 🎉') }}</h2>
 
-            <section v-if="canPost" class="visual-qc" :class="`qc-${visualQcState}`" aria-labelledby="visual-qc-title">
+            <section v-if="canPost && mission.videoGeneration" class="visual-qc qc-passed" aria-labelledby="generation-qc-title">
+              <div class="visual-qc-heading"><div><span>{{ tr('Product Fidelity + Cinematic QC') }}</span><strong id="generation-qc-title">{{ tr('ผ่านครบก่อนรวมวิดีโอ') }}</strong></div><span class="qc-score">✓</span></div>
+              <p>{{ tr('ภาพต้นฉบับถูกส่งทุกช็อต และทุกช็อตผ่าน VLM + OCR กับ ShotVL แล้ว') }}</p>
+              <div class="generation-progress">
+                <article v-for="(shot, index) in mission.videoGeneration.shots" :key="shot.shotId" class="generation-shot generation-succeeded">
+                  <div><strong>{{ tr('Shot {n}', { n: index + 1 }) }}</strong><span>revision {{ shot.revision }}</span></div>
+                  <div class="generation-scores"><span>Product {{ percent(shot.fidelity?.score) }} ✓</span><span>Cinematic {{ percent(shot.cinematic?.score) }} ✓</span></div>
+                </article>
+              </div>
+            </section>
+
+            <section v-else-if="canPost" class="visual-qc" :class="`qc-${visualQcState}`" aria-labelledby="visual-qc-title">
               <div class="visual-qc-heading">
                 <div>
                   <span>{{ tr('Visual QC · คำแนะนำ') }}</span>
@@ -825,6 +879,22 @@ input:focus, textarea:focus, select:focus { border-color: #1f6b4f; box-shadow: 0
 .export-ready > span, .success-mark { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 50%; color: white; background: #1f6b4f; font-weight: 700; }
 .export-ready strong, .success-panel strong { color: #173f32; }
 .export-ready p, .success-panel p { margin: 4px 0 0; color: #607068; font-size: .8rem; }
+.provider-generation { margin-top: 28px; padding: 24px; border: 1px solid #d9e4de; border-radius: 18px; background: linear-gradient(145deg, #f8fbf9, #eef7f1); }
+.provider-generation h3 { margin: 4px 0 8px; }
+.provider-choice { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0; }
+.provider-choice label { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 16px; border: 1px solid #cad8d0; border-radius: 14px; background: white; cursor: pointer; }
+.provider-choice label.selected { border-color: #1f6b4f; box-shadow: 0 0 0 2px #1f6b4f22; }
+.provider-choice label span { grid-column: 2; color: #607068; font-size: .78rem; }
+.generation-progress { display: grid; gap: 10px; margin-top: 18px; }
+.generation-heading, .generation-shot > div { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.generation-heading { padding: 12px 14px; border-radius: 12px; background: #173f32; color: white; }
+.generation-shot { padding: 14px; border: 1px solid #d9e4de; border-radius: 12px; background: white; }
+.generation-shot span { color: #607068; font-size: .8rem; }
+.generation-scores { justify-content: flex-start !important; margin-top: 8px; }
+.generation-scores span { padding: 4px 8px; border-radius: 999px; background: #edf7ef; color: #173f32; }
+.generation-shot ul { margin: 8px 0 0; padding-left: 20px; color: #9a3f32; font-size: .8rem; }
+.generation-failed { border-color: #e4b6ae; }
+@media (max-width: 640px) { .provider-choice { grid-template-columns: 1fr; } .generation-shot > div { align-items: flex-start; flex-direction: column; } }
 .post-form { margin: 18px 0; }
 .outcome-form { margin: 20px 0; padding: 18px; border: 1px solid #dce1dd; border-radius: 15px; }
 .outcome-form > p { margin-top: 0; color: #607068; }

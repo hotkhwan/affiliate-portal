@@ -189,6 +189,24 @@ Object.assign(zh, {
 })
 
 Object.assign(en, {
+  'First Post · สร้างวิดีโอจริง': 'First Post · Generate real video', 'เลือกทีม Render': 'Choose a render provider',
+  'KWANNI จะส่งภาพต้นฉบับไปทุกช็อต ตรวจ Product Fidelity ด้วย VLM + OCR ตรวจคุณภาพภาพยนตร์ด้วย ShotVL และให้ Qwen ซ่อมเฉพาะช็อตที่ไม่ผ่าน': 'KWANNI sends the original image to every shot, gates product fidelity with VLM + OCR, checks cinematography with ShotVL, and asks Qwen to repair only a failed shot.',
+  'กำลังเข้าคิว…': 'Queuing…', 'สร้างและตรวจวิดีโออัตโนมัติ →': 'Generate and verify video automatically →', 'ลองสร้างเฉพาะงานที่ค้างอีกครั้ง': 'Retry the remaining work', 'ปิดหน้านี้ได้ งานอยู่ใน Mongo และทำต่อหลังระบบ restart': 'You may close this page. The durable Mongo job resumes after a restart.',
+  'รอคิวสร้างวิดีโอ': 'Waiting to generate video', 'กำลังสร้างช็อต': 'Rendering shot', 'กำลังตรวจสินค้าและภาพยนตร์': 'Checking product and cinematography', 'Qwen กำลังแก้ช็อตนี้': 'Qwen is repairing this shot', 'กำลังรวมวิดีโอ': 'Assembling video', 'ผ่าน': 'Passed', 'ไม่ผ่าน': 'Failed',
+  'เริ่มสร้างวิดีโอจริงแล้ว ระบบจะตรวจและซ่อมทีละช็อต': 'Real video generation started. Each shot will be checked and repaired independently.', 'ลองสร้างวิดีโออีกครั้ง': 'Try generating the video again',
+  'Product Fidelity + Cinematic QC': 'Product Fidelity + Cinematic QC', 'ผ่านครบก่อนรวมวิดีโอ': 'All gates passed before assembly', 'ภาพต้นฉบับถูกส่งทุกช็อต และทุกช็อตผ่าน VLM + OCR กับ ShotVL แล้ว': 'The original image was sent with every shot, and every shot passed VLM + OCR and ShotVL.',
+})
+
+Object.assign(zh, {
+  'First Post · สร้างวิดีโอจริง': '首条发布 · 生成真实视频', 'เลือกทีม Render': '选择渲染服务',
+  'KWANNI จะส่งภาพต้นฉบับไปทุกช็อต ตรวจ Product Fidelity ด้วย VLM + OCR ตรวจคุณภาพภาพยนตร์ด้วย ShotVL และให้ Qwen ซ่อมเฉพาะช็อตที่ไม่ผ่าน': 'KWANNI 会为每个镜头提交原始商品图，以 VLM + OCR 检查商品保真度，以 ShotVL 检查影视质量，并只让 Qwen 修复未通过的镜头。',
+  'กำลังเข้าคิว…': '正在排队…', 'สร้างและตรวจวิดีโออัตโนมัติ →': '自动生成并检查视频 →', 'ลองสร้างเฉพาะงานที่ค้างอีกครั้ง': '重试剩余任务', 'ปิดหน้านี้ได้ งานอยู่ใน Mongo และทำต่อหลังระบบ restart': '可以关闭页面。任务保存在 Mongo 中，系统重启后会继续。',
+  'รอคิวสร้างวิดีโอ': '等待生成视频', 'กำลังสร้างช็อต': '正在生成镜头', 'กำลังตรวจสินค้าและภาพยนตร์': '正在检查商品与画面质量', 'Qwen กำลังแก้ช็อตนี้': 'Qwen 正在修复此镜头', 'กำลังรวมวิดีโอ': '正在合并视频', 'ผ่าน': '通过', 'ไม่ผ่าน': '未通过',
+  'เริ่มสร้างวิดีโอจริงแล้ว ระบบจะตรวจและซ่อมทีละช็อต': '真实视频生成已开始，系统会逐镜头检查并修复。', 'ลองสร้างวิดีโออีกครั้ง': '重新生成视频',
+  'Product Fidelity + Cinematic QC': '商品保真度 + 影视质检', 'ผ่านครบก่อนรวมวิดีโอ': '所有检查通过后才合并', 'ภาพต้นฉบับถูกส่งทุกช็อต และทุกช็อตผ่าน VLM + OCR กับ ShotVL แล้ว': '每个镜头都使用了原始商品图，并已通过 VLM + OCR 与 ShotVL 检查。',
+})
+
+Object.assign(en, {
   'กำลังส่งข้อมูลไปยัง Local Qwen': 'Sending verified inputs to Local Qwen',
   'Creative Director กำลังหา hook ที่น่าหยุดดู': 'Creative Director is finding a scroll-stopping hook',
   'Story Director กำลังเรียงเรื่องให้จบใน 8 วินาที': 'Story Director is shaping the story into 8 seconds',

@@ -78,6 +78,13 @@ export function createMissionApi(
     generateDraft(id: string) {
       return request(`/missions/${encodeURIComponent(id)}/draft`, { method: 'POST' }, timeout.longRequestMs)
     },
+    generateVideo(id: string, provider: 'veo' | 'seedance') {
+      return request(`/missions/${encodeURIComponent(id)}/generate-video`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      })
+    },
     exportDraft(id: string) {
       return request(`/missions/${encodeURIComponent(id)}/export`, { method: 'POST' }, timeout.longRequestMs)
     },

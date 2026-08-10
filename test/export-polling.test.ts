@@ -13,6 +13,26 @@ function mission(state: Mission['state']): Mission {
 afterEach(() => vi.useRealTimers())
 
 describe('export polling', () => {
+  it('keeps polling a durable provider generation job', async () => {
+    vi.useFakeTimers()
+    let current = mission('videoGenerating')
+    current.videoGeneration = { provider: 'veo', state: 'rendering', shots: [], updatedAt: current.updatedAt }
+    const completed = mission('exported')
+    const refresh = vi.fn().mockResolvedValue(completed)
+    const poller = createExportPoller({ current: () => current, refresh, update: value => { current = value }, intervalMs: 100 })
+    poller.start()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(current.state).toBe('exported')
+  })
+
+  it('does not poll a failed provider job forever', () => {
+    const failed = mission('videoGenerating')
+    failed.videoGeneration = { provider: 'seedance', state: 'failed', shots: [], updatedAt: failed.updatedAt }
+    const refresh = vi.fn()
+    createExportPoller({ current: () => failed, refresh, update: vi.fn(), intervalMs: 1 }).start()
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
   it('updates a queued export without manual refresh and then stops', async () => {
     vi.useFakeTimers()
     let current = mission('exportQueued')

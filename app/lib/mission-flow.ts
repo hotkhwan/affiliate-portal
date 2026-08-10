@@ -6,6 +6,7 @@ const stateOrder: MissionState[] = [
   'assetsUploaded',
   'draftGenerating',
   'draftReady',
+  'videoGenerating',
   'exportQueued',
   'exported',
   'posted',
@@ -118,6 +119,7 @@ function presignedExpiry(value: string): number | null {
 }
 
 export function shouldRefreshExport(mission: Mission, now = Date.now()): boolean {
+  if (mission.state === 'videoGenerating') return true
   if (mission.state === 'exportQueued') return true
   if (mission.state !== 'exported') return false
   if (!mission.export?.downloadUrl) return true
@@ -130,6 +132,6 @@ export function shouldRefreshExport(mission: Mission, now = Date.now()): boolean
 }
 
 export function canPostMission(mission?: Mission | null): boolean {
-  if (!mission?.export || mission.state === 'exportQueued') return false
+  if (!mission?.export || mission.state === 'exportQueued' || mission.state === 'videoGenerating') return false
   return mission.exportJob?.state !== 'queued' && mission.exportJob?.state !== 'running' && mission.exportJob?.state !== 'failed'
 }

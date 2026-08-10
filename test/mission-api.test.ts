@@ -96,4 +96,16 @@ describe('mission API client', () => {
       body: JSON.stringify({ decision: 'accept', reason: 'ตรวจด้วยตาแล้วตรงกับสินค้าจริง' }),
     }))
   })
+
+  it('queues provider generation without exposing provider credentials', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(mission), { status: 202 }))
+    const api = createMissionApi('/v1', () => 'alpha-user', fetcher as typeof fetch)
+
+    await api.generateVideo('mission-1', 'veo')
+    expect(fetcher).toHaveBeenCalledWith('/v1/missions/mission-1/generate-video', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ provider: 'veo' }),
+      headers: expect.not.objectContaining({ VEO_API_KEY: expect.anything() }),
+    }))
+  })
 })

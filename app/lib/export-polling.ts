@@ -16,12 +16,13 @@ export interface ExportPollerOptions {
 }
 
 export function exportPending(mission?: Mission | null): boolean {
-  return mission?.state === 'exportQueued' || mission?.exportJob?.state === 'queued' || mission?.exportJob?.state === 'running'
+  const providerPending = mission?.state === 'videoGenerating' && mission.videoGeneration?.state !== 'failed'
+  return providerPending || mission?.state === 'exportQueued' || mission?.exportJob?.state === 'queued' || mission?.exportJob?.state === 'running'
 }
 
 export function createExportPoller(options: ExportPollerOptions): ExportPoller {
   const intervalMs = options.intervalMs ?? 3_000
-  const maxAttempts = options.maxAttempts ?? 100
+  const maxAttempts = options.maxAttempts ?? 1_200
   const schedule = options.schedule ?? ((callback, delay) => setTimeout(callback, delay))
   const cancel = options.cancel ?? (timer => clearTimeout(timer))
   let timer: ReturnType<typeof setTimeout> | undefined
