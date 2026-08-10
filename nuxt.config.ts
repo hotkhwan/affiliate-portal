@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       missionRequestTimeoutMs: positiveMilliseconds(process.env.NUXT_PUBLIC_MISSION_REQUEST_TIMEOUT_MS, 30_000),
       missionLongRequestTimeoutMs: positiveMilliseconds(process.env.NUXT_PUBLIC_MISSION_LONG_REQUEST_TIMEOUT_MS, 120_000),
       localVideoEnabled: process.env.NUXT_PUBLIC_LOCAL_VIDEO_ENABLED === 'true',
+      ltxChallengerEnabled: process.env.NUXT_PUBLIC_LTX_CHALLENGER_ENABLED === 'true',
     },
   },
   typescript: {

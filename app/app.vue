@@ -28,8 +28,11 @@ const message = ref('')
 const error = ref('')
 const copied = ref(false)
 const copiedPrompt = ref('')
-const selectedProvider = ref<'wan' | 'veo' | 'seedance'>('wan')
+type VideoProvider = 'hunyuan' | 'ltx' | 'wan' | 'veo' | 'seedance'
+const selectedProvider = ref<VideoProvider>('hunyuan')
 const localVideoEnabled = String(config.public.localVideoEnabled).toLowerCase() === 'true'
+const ltxChallengerEnabled = String(config.public.ltxChallengerEnabled).toLowerCase() === 'true'
+const selectedProviderAvailable = computed(() => selectedProvider.value === 'ltx' ? ltxChallengerEnabled : localVideoEnabled)
 const draftActivityIndex = ref(0)
 const draftElapsedSeconds = ref(0)
 const generationActivityIndex = ref(0)
@@ -169,7 +172,7 @@ async function prepareExport() {
 
 async function generateVideo() {
   if (!mission.value) return
-  if (!localVideoEnabled) {
+  if (!selectedProviderAvailable.value) {
     error.value = tr('Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม')
     return
   }
@@ -179,8 +182,19 @@ async function generateVideo() {
 
 function estimatedReadyLabel(): string {
   const value = mission.value?.videoGeneration?.estimatedReadyAt
-  if (!value) return tr('ประมาณ 20–40 นาที')
+  if (!value) return selectedProvider.value === 'hunyuan' ? tr('ประมาณ 3–8 นาที') : selectedProvider.value === 'ltx' ? tr('ประมาณ 8–20 นาที') : tr('ประมาณ 20–40 นาที')
   return new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : locale.value === 'en' ? 'en' : 'th-TH', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+}
+
+function isLocalProvider(provider?: string): boolean {
+  return provider === 'hunyuan' || provider === 'ltx' || provider === 'wan'
+}
+
+function providerLabel(provider: string): string {
+  if (provider === 'hunyuan') return 'HunyuanVideo-1.5 Distilled'
+  if (provider === 'ltx') return 'LTX-2.3 Challenger'
+  if (provider === 'wan') return 'Wan2.2 Legacy'
+  return provider === 'veo' ? 'Veo 3.1' : 'Seedance'
 }
 
 function generationStateLabel(state: string): string {
@@ -569,18 +583,19 @@ onBeforeUnmount(() => {
             <section class="provider-generation" aria-labelledby="provider-generation-title">
               <p class="section-label">{{ tr('First Post · สร้างวิดีโอจริง') }}</p>
               <h3 id="provider-generation-title">{{ tr('สร้าง Local Preview บน DGX') }}</h3>
-              <p>{{ tr('Wan จะใช้ภาพสินค้าต้นฉบับสร้างคลิปแนวตั้ง 5 วินาที โดยบีบแผน 3 ช็อตเป็น 3 จังหวะสำคัญ ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้') }}</p>
+              <p>{{ tr('Hunyuan จะใช้ภาพสินค้าต้นฉบับสร้าง Product Preview แนวตั้ง 5 วินาทีแบบ distilled ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้') }}</p>
               <div class="provider-choice">
-                <label :class="{ selected: localVideoEnabled, disabled: !localVideoEnabled }"><input v-model="selectedProvider" type="radio" value="wan" :disabled="videoGenerating || !localVideoEnabled"><strong>Wan2.2 Local Preview</strong><span>5 วินาที · 704 × 1280 · ไม่มีค่า API</span></label>
+                <label :class="{ selected: selectedProvider === 'hunyuan' && localVideoEnabled, disabled: !localVideoEnabled }"><input v-model="selectedProvider" type="radio" value="hunyuan" :disabled="videoGenerating || !localVideoEnabled"><strong>HunyuanVideo-1.5 Distilled</strong><span>{{ tr('Product Preview · 5 วินาที · 480p · ไม่มีเสียง') }}</span></label>
+                <label :class="{ selected: selectedProvider === 'ltx' && ltxChallengerEnabled, disabled: !ltxChallengerEnabled }"><input v-model="selectedProvider" type="radio" value="ltx" :disabled="videoGenerating || !ltxChallengerEnabled"><strong>LTX-2.3 Challenger</strong><span>{{ tr('ทดลองภาพ + เสียงพร้อมกัน · ยังไม่เปิดทั่วไป') }}</span></label>
               </div>
               <p v-if="!localVideoEnabled" class="prompt-warning">{{ tr('Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม') }}</p>
-              <button v-if="!videoGenerating" class="primary full" type="button" :disabled="Boolean(busy) || !localVideoEnabled" @click="generateVideo">
+              <button v-if="!videoGenerating" class="primary full" type="button" :disabled="Boolean(busy) || !selectedProviderAvailable" @click="generateVideo">
                 <span v-if="busy === 'generate-video'" class="spinner" />
                 {{ busy === 'generate-video' ? tr('กำลังเข้าคิว…') : tr('สร้าง Local Preview →') }}
               </button>
               <div v-if="mission.videoGeneration" class="generation-progress" role="status" aria-live="polite">
-                <div class="generation-heading"><strong>{{ mission.videoGeneration.provider === 'wan' ? 'Wan2.2 Local' : mission.videoGeneration.provider === 'veo' ? 'Veo 3.1' : 'Seedance' }}</strong><span>{{ generationStateLabel(mission.videoGeneration.state) }}</span></div>
-                <div v-if="mission.videoGeneration.provider === 'wan' && videoGenerating" class="local-preview-activity">
+                <div class="generation-heading"><strong>{{ providerLabel(mission.videoGeneration.provider) }}</strong><span>{{ generationStateLabel(mission.videoGeneration.state) }}</span></div>
+                <div v-if="isLocalProvider(mission.videoGeneration.provider) && videoGenerating" class="local-preview-activity">
                   <span class="spinner" />
                   <div><strong>{{ currentGenerationActivity }}</strong><p>{{ tr('เวลาประมาณการ') }}: {{ estimatedReadyLabel() }} · {{ tr('กลับมาหน้านี้ภายหลังได้ งานไม่หาย') }}</p></div>
                 </div>
@@ -605,7 +620,7 @@ onBeforeUnmount(() => {
             <h2 v-if="!mission.posted">{{ tr('พร้อมลองตลาดแล้ว') }}</h2>
             <h2 v-else>{{ tr('โพสต์แรกสำเร็จแล้ว 🎉') }}</h2>
 
-            <section v-if="canPost && mission.videoGeneration && mission.videoGeneration.provider !== 'wan'" class="visual-qc qc-passed" aria-labelledby="generation-qc-title">
+            <section v-if="canPost && mission.videoGeneration && !isLocalProvider(mission.videoGeneration.provider)" class="visual-qc qc-passed" aria-labelledby="generation-qc-title">
               <div class="visual-qc-heading"><div><span>{{ tr('Product Fidelity + Cinematic QC') }}</span><strong id="generation-qc-title">{{ tr('ผ่านครบก่อนรวมวิดีโอ') }}</strong></div><span class="qc-score">✓</span></div>
               <p>{{ tr('ภาพต้นฉบับถูกส่งทุกช็อต และทุกช็อตผ่าน VLM + OCR กับ ShotVL แล้ว') }}</p>
               <div class="generation-progress">

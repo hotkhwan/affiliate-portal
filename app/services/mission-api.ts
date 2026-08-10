@@ -78,7 +78,7 @@ export function createMissionApi(
     generateDraft(id: string) {
       return request(`/missions/${encodeURIComponent(id)}/draft`, { method: 'POST' }, timeout.longRequestMs)
     },
-    generateVideo(id: string, provider: 'wan' | 'veo' | 'seedance') {
+    generateVideo(id: string, provider: 'hunyuan' | 'ltx' | 'wan' | 'veo' | 'seedance') {
       return request(`/missions/${encodeURIComponent(id)}/generate-video`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

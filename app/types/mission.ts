@@ -129,7 +129,7 @@ export interface GeneratedShot {
 }
 
 export interface VideoGeneration {
-  provider: 'wan' | 'veo' | 'seedance'
+  provider: 'hunyuan' | 'ltx' | 'wan' | 'veo' | 'seedance'
   mode?: 'localPreview' | 'cloudFinal'
   state: GenerationState
   job?: ProcessingJob

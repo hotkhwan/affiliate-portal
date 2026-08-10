@@ -130,6 +130,11 @@ const en: Record<string, string> = {
 }
 
 Object.assign(en, {
+  'Hunyuan จะใช้ภาพสินค้าต้นฉบับสร้าง Product Preview แนวตั้ง 5 วินาทีแบบ distilled ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้': 'Hunyuan uses the original product image to make a 5-second distilled portrait Product Preview with no API fee. You may close this page and return later.',
+  'Product Preview · 5 วินาที · 480p · ไม่มีเสียง': 'Product Preview · 5 seconds · 480p · no audio',
+  'ทดลองภาพ + เสียงพร้อมกัน · ยังไม่เปิดทั่วไป': 'Experimental native video + audio · not generally available',
+  'ประมาณ 3–8 นาที': 'About 3–8 minutes',
+  'ประมาณ 8–20 นาที': 'About 8–20 minutes',
   'Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม': 'Local Preview is available only during supervised test windows until login and quotas are ready.',
   'KWANNI Creative Brain': 'KWANNI Creative Brain',
   'ภาพสินค้า 1 ภาพ': 'One product image',
@@ -180,6 +185,11 @@ const zh: Record<string, string> = {
 }
 
 Object.assign(zh, {
+  'Hunyuan จะใช้ภาพสินค้าต้นฉบับสร้าง Product Preview แนวตั้ง 5 วินาทีแบบ distilled ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้': 'Hunyuan 使用原始商品图生成 5 秒蒸馏版竖屏商品预览，无 API 费用，可稍后返回获取文件。',
+  'Product Preview · 5 วินาที · 480p · ไม่มีเสียง': '商品预览 · 5 秒 · 480p · 无音频',
+  'ทดลองภาพ + เสียงพร้อมกัน · ยังไม่เปิดทั่วไป': '实验性原生视频与音频 · 尚未公开',
+  'ประมาณ 3–8 นาที': '约 3–8 分钟',
+  'ประมาณ 8–20 นาที': '约 8–20 分钟',
   'Local Preview เปิดเฉพาะช่วงทดสอบที่มีผู้ดูแล จนกว่าระบบ Login และโควตาจะพร้อม': '在登录与配额上线前，本地预览仅在有人监督的测试窗口开放。',
   'KWANNI Creative Brain': 'KWANNI 创意大脑', 'ภาพสินค้า 1 ภาพ': '一张商品图', 'สู่แผนวิดีโอระดับมืออาชีพ': '生成专业视频方案',
   'บอกข้อเท็จจริงของสินค้า เพิ่มภาพอ้างอิงเพียง 1 ภาพ แล้วทีม Creative จะสร้างแผน 3 ช็อตและ Prompt สำหรับ Veo / Seedance': '提供经核实的商品信息和一张参考图，创意团队将生成三镜头方案以及 Veo / Seedance 提示词。',
