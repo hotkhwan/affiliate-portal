@@ -130,6 +130,9 @@ const en: Record<string, string> = {
 }
 
 Object.assign(en, {
+  'กำลังเตรียมลิงก์ใหม่…': 'Refreshing the secure download link…',
+  'ดาวน์โหลดวิดีโอ ↓': 'Download video ↓',
+  'ลองดาวน์โหลดอีกครั้ง': 'Try downloading again',
   'Hunyuan จะใช้ภาพสินค้าต้นฉบับสร้าง Product Preview แนวตั้ง 5 วินาทีแบบ distilled ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้': 'Hunyuan uses the original product image to make a 5-second distilled portrait Product Preview with no API fee. You may close this page and return later.',
   'Product Preview · 5 วินาที · 480p · ไม่มีเสียง': 'Product Preview · 5 seconds · 480p · no audio',
   'ทดลองภาพ + เสียงพร้อมกัน · ยังไม่เปิดทั่วไป': 'Experimental native video + audio · not generally available',
@@ -185,6 +188,9 @@ const zh: Record<string, string> = {
 }
 
 Object.assign(zh, {
+  'กำลังเตรียมลิงก์ใหม่…': '正在刷新安全下载链接…',
+  'ดาวน์โหลดวิดีโอ ↓': '下载视频 ↓',
+  'ลองดาวน์โหลดอีกครั้ง': '重新下载',
   'Hunyuan จะใช้ภาพสินค้าต้นฉบับสร้าง Product Preview แนวตั้ง 5 วินาทีแบบ distilled ไม่มีค่า API และปิดหน้านี้กลับมารับไฟล์ภายหลังได้': 'Hunyuan 使用原始商品图生成 5 秒蒸馏版竖屏商品预览，无 API 费用，可稍后返回获取文件。',
   'Product Preview · 5 วินาที · 480p · ไม่มีเสียง': '商品预览 · 5 秒 · 480p · 无音频',
   'ทดลองภาพ + เสียงพร้อมกัน · ยังไม่เปิดทั่วไป': '实验性原生视频与音频 · 尚未公开',

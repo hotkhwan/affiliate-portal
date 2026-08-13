@@ -4,6 +4,7 @@ import { createMissionApi, MissionApiError, PRIVACY_NOTICE_VERSION } from './ser
 import { createMissionSession } from './stores/mission-session'
 import { createVisualQcPoller, visualQcDefects, visualQcDisplayState, visualQcScore } from './lib/visual-qc'
 import { createExportPoller } from './lib/export-polling'
+import { downloadLatestMissionVideo } from './lib/fresh-download'
 import { detectLocale, localeOptions, translate } from './i18n'
 import type { VisualQcPoller } from './lib/visual-qc'
 import type { ExportPoller } from './lib/export-polling'
@@ -212,6 +213,24 @@ async function refreshMission() {
   if (!mission.value) return
   const refresh = () => api.get(mission.value!.id)
   await run('refresh', refresh, 'อัปเดตสถานะล่าสุดแล้ว', 'ลองตรวจสถานะอีกครั้ง')
+}
+
+async function downloadVideo() {
+  if (!mission.value?.export) return
+  busy.value = 'download-video'
+  error.value = ''
+  try {
+    const fresh = await downloadLatestMissionVideo(mission.value.id, api.get, document)
+    setMission(fresh)
+  }
+  catch (cause) {
+    error.value = describeError(cause)
+    retryAction = downloadVideo
+    retryLabel.value = tr('ลองดาวน์โหลดอีกครั้ง')
+  }
+  finally {
+    busy.value = ''
+  }
 }
 
 async function copyCaption() {
@@ -699,7 +718,10 @@ onBeforeUnmount(() => {
                 </button>
                 <button v-if="exportFailed" class="primary" type="button" :disabled="Boolean(busy)" @click="prepareExport">ลองเตรียมไฟล์อีกครั้ง</button>
               </div>
-              <a v-if="mission.export?.downloadUrl && canPost" class="download-link full" :href="mission.export.downloadUrl" download>ดาวน์โหลดวิดีโอ ↓</a>
+              <button v-if="mission.export?.downloadUrl && canPost" class="download-link full" type="button" :disabled="Boolean(busy)" @click="downloadVideo">
+                <span v-if="busy === 'download-video'" class="spinner" />
+                {{ busy === 'download-video' ? tr('กำลังเตรียมลิงก์ใหม่…') : tr('ดาวน์โหลดวิดีโอ ↓') }}
+              </button>
               <div v-if="canPost" class="action-row post-actions">
                 <button class="secondary" type="button" @click="copyCaption">
                   {{ copied ? '✓ คัดลอกแล้ว' : 'คัดลอก Caption' }}
