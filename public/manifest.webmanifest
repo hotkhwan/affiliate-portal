@@ -1,0 +1,10 @@
+{
+  "name": "KWANNI Start",
+  "short_name": "KWANNI",
+  "description": "เริ่ม Affiliate แบบทีละขั้น",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f6f3ea",
+  "theme_color": "#1f6b4f",
+  "icons": [{ "src": "kwanni-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
